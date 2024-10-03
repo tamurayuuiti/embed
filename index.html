@@ -3,202 +3,295 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ランダムユニコード生成</title>
+    <title>ステガノグラフィー - 画像にテキストを埋め込み、抽出</title>
     <style>
         body {
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
-            height: 100vh;
-            margin: 0;
-            background-color: #f8f9fa;
             font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
         }
-
-        #unicode-container {
-            width: 200px;
-            height: 200px;
-            font-size: 150px;
+        h1 {
+            color: #333;
             text-align: center;
-            line-height: 200px; /* 縦中央揃え */
-            margin-bottom: 10px;
-            overflow: hidden; /* 内容がはみ出さないようにする */
+            margin-bottom: 40px;
         }
-
-        #unicode-info {
-            font-size: 18px;
-            margin-bottom: 20px;
-            text-align: center;
-        }
-
-        #history, #favorites, #haiku {
-            margin-top: 20px;
-            font-size: 16px;
+        .container {
+            max-width: 800px;
+            margin: 0 auto;
             background-color: #fff;
-            padding: 10px;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
             border-radius: 8px;
-            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
-            width: 300px;
-            text-align: center;
         }
-
-        button {
-            padding: 12px 25px;
-            margin: 10px;
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h3 {
+            color: #444;
+            margin-bottom: 10px;
+        }
+        .section p {
+            margin: 5px 0;
+            color: #666;
+        }
+        input[type="file"], input[type="text"], textarea, button {
+            margin-top: 10px;
+            padding: 10px;
             font-size: 16px;
-            background-color: #007bff;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        textarea {
+            width: calc(100% - 22px);
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
             color: white;
             border: none;
-            border-radius: 5px;
             cursor: pointer;
-            transition: background-color 0.3s ease;
+            margin-right: 10px;
         }
-
         button:hover {
-            background-color: #0056b3;
+            background-color: #45a049;
         }
-
-        .section {
-            display: flex;
-            flex-direction: column;
-            align-items: center;
-            margin-bottom: 20px;
+        .image-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .image-preview img {
+            max-width: 100%;
+            height: auto;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f1f1f1;
+        }
+        .info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .details {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #333;
+        }
+        #canvas {
+            display: none;
+        }
+        .warning {
+            color: red;
         }
     </style>
 </head>
 <body>
-    <div id="unicode-container">?</div>
-    <div id="unicode-info">選ばれた文字の情報がここに表示されます</div>
+    <h1>画像にテキストを埋め込み、テキストを抽出する</h1>
 
-    <div class="section">
-        <button onclick="generateRandomUnicode()">新しいユニコードを表示</button>
-        <button onclick="addToFavorites()">お気に入りに追加</button>
-        <button onclick="generateHaiku()">俳句を生成</button>
+    <div class="container">
+        <div class="section">
+            <h3>1. 画像に文字を埋め込む</h3>
+            <p>PNGまたはJPEG形式の画像を選択し、隠したい文字を入力してください。</p>
+            <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
+            <textarea id="textInput" placeholder="隠したい文字を入力" oninput="checkTextSize()"></textarea>
+            <p id="embedCapacityInfo" class="info"></p>
+            <p id="embedTextCount" class="info"></p>
+            <button onclick="embedText()">テキストを埋め込む</button>
+            <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <div id="embedImageDetails" class="details"></div>
+            <div class="image-preview" id="embedImagePreview">
+                <p>アップロードした画像:</p>
+                <img id="embedPreviewImage" src="" alt="プレビュー" />
+            </div>
+            <div class="image-preview" id="outputImagePreview">
+                <p>文字を埋め込んだ後の画像:</p>
+                <img id="outputPreviewImage" src="" alt="プレビュー" />
+            </div>
+        </div>
+
+        <div class="section">
+            <h3>2. 画像から文字を抽出</h3>
+            <p>テキストが埋め込まれている画像を選択してください。</p>
+            <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            <button onclick="extractText()">テキストを抽出</button>
+            <p id="extractedText"></p>
+            <div id="extractImageDetails" class="details"></div>
+            <div class="image-preview" id="extractImagePreview">
+                <p>アップロードした画像:</p>
+                <img id="extractPreviewImage" src="" alt="プレビュー" />
+            </div>
+        </div>
+
+        <canvas id="canvas"></canvas>
     </div>
 
-    <div id="history">履歴: </div>
-    <div id="favorites">お気に入りリスト: </div>
-    <div id="haiku">俳句生成エリア</div>
-
-    <canvas id="char-check-canvas" style="display:none;"></canvas>
-
     <script>
-        let history = JSON.parse(localStorage.getItem('history')) || [];
-        let favorites = JSON.parse(localStorage.getItem('favorites')) || [];
+        let imgData;
+        let maxTextLength = 0;
 
-        window.onload = () => {
-            updateHistory();
-            updateFavorites();
-            generateRandomUnicode();
-        };
+        // ファイルの拡張子とMIMEタイプをチェックし、非対応の場合はエラーメッセージを表示
+        function validateImageFile(file) {
+            const validTypes = ['image/png', 'image/jpeg'];
+            const validExtensions = ['png', 'jpg', 'jpeg'];
+            const fileType = file.type;
+            const fileExtension = file.name.split('.').pop().toLowerCase();
 
-        // ランダムなユニコード文字を生成し、表示可能な文字が見つかるまで繰り返す関数
-        function generateRandomUnicode() {
-            let randomChar;
-            let isRenderable = false;
+            if (!validTypes.includes(fileType) || !validExtensions.includes(fileExtension)) {
+                alert("対応していないファイル形式です。PNGまたはJPEG形式の画像を選択してください。");
+                return false;
+            }
+            return true;
+        }
 
-            while (!isRenderable) {
-                const randomCodePoint = Math.floor(Math.random() * 0x10FFFF);
-                randomChar = String.fromCodePoint(randomCodePoint);
-                isRenderable = isCharRenderable(randomChar); // 表示可能かチェック
+        // 画像をアップロードした時のエラーハンドリングと情報表示
+        function handleImageUpload(event, previewImageId, canvasId, detailsId) {
+            const file = event.target.files[0];
+            if (!validateImageFile(file)) {
+                return;
             }
 
-            // 画面に表示
-            document.getElementById('unicode-container').innerText = randomChar;
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById(canvasId);
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            const randomCodePoint = randomChar.codePointAt(0);
-            const charInfo = {
-                codePoint: randomCodePoint,
-                name: `U+${randomCodePoint.toString(16).toUpperCase()}`
+                    // プレビュー画像を表示
+                    document.getElementById(previewImageId).src = event.target.result;
+
+                    // 画像詳細情報を表示
+                    const fileSizeKB = (file.size / 1024).toFixed(2);
+                    const pixelCount = img.width * img.height;
+                    const maxTextBytes = Math.floor(pixelCount * 3 / 8); // 最大バイト数を計算
+                    maxTextLength = maxTextBytes; // 1バイト=1文字のため
+                    document.getElementById(detailsId).innerText = 
+                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${fileSizeKB} KB\n画像形式: ${file.type}\n埋め込める最大バイト数: ${maxTextBytes} バイト`;
+                    
+                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${maxTextBytes} バイト（${maxTextBytes} 文字）まで埋め込むことができます。`;
+                };
+                img.src = event.target.result;
             };
-
-            document.getElementById('unicode-info').innerHTML = `
-                文字: ${randomChar}<br>
-                コードポイント: ${charInfo.name}<br>
-                <a href="https://www.fileformat.info/info/unicode/char/${randomCodePoint.toString(16)}/index.htm" target="_blank">詳細を見る</a>
-            `;
-
-            history.push(randomChar);
-            if (history.length > 10) history.shift();
-            localStorage.setItem('history', JSON.stringify(history));
-            updateHistory();
+            reader.readAsDataURL(file);
         }
 
-        function updateHistory() {
-            document.getElementById('history').innerText = "履歴: " + history.join(', ');
-        }
+        // 画像プレビューと詳細情報を表示（文字埋め込み用）
+        document.getElementById('embedImageInput').addEventListener('change', function(e) {
+            handleImageUpload(e, 'embedPreviewImage', 'canvas', 'embedImageDetails');
+        });
 
-        function addToFavorites() {
-            const char = document.getElementById('unicode-container').innerText;
-            if (!favorites.includes(char)) {
-                favorites.push(char);
-                localStorage.setItem('favorites', JSON.stringify(favorites));
-                updateFavorites();
-            }
-        }
+        // 画像プレビューと詳細情報を表示（文字抽出用）
+        document.getElementById('extractImageInput').addEventListener('change', function(e) {
+            handleImageUpload(e, 'extractPreviewImage', 'canvas', 'extractImageDetails');
+        });
 
-        function updateFavorites() {
-            document.getElementById('favorites').innerText = "お気に入りリスト: " + favorites.join(', ');
-        }
-
-        function generateHaiku() {
-            const getRandomChar = () => {
-                let char;
-                let isRenderable = false;
-
-                while (!isRenderable) {
-                    const randomCodePoint = Math.floor(Math.random() * 0x10FFFF);
-                    char = String.fromCodePoint(randomCodePoint);
-                    isRenderable = isCharRenderable(char); // 表示可能かチェック
-                }
-
-                return char;
-            };
-
-            let line1 = '', line2 = '', line3 = '';
-            for (let i = 0; i < 5; i++) line1 += getRandomChar();
-            for (let i = 0; i < 7; i++) line2 += getRandomChar();
-            for (let i = 0; i < 5; i++) line3 += getRandomChar();
-
-            document.getElementById('haiku').innerHTML = `
-                <div>俳句生成:</div>
-                <div>${line1}</div>
-                <div>${line2}</div>
-                <div>${line3}</div>
-            `;
-        }
-
-        // 文字がレンダリング可能かチェックする関数
-        function isCharRenderable(char) {
-            const canvas = document.getElementById('char-check-canvas');
+        // 入力テキストサイズをチェックし、警告を表示
+        function checkTextSize() {
+            const text = document.getElementById('textInput').value;
+            const textLength = new TextEncoder().encode(text).length; // UTF-8でのバイト数
+            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
             
-            // willReadFrequently: true を設定してキャンバスコンテキストを取得
-            const ctx = canvas.getContext('2d', { willReadFrequently: true });
-            const size = 100;
-
-            canvas.width = size;
-            canvas.height = size;
-
-            ctx.clearRect(0, 0, size, size);
-
-            // 基準となる記号（豆腐）を描画
-            ctx.font = '100px sans-serif';
-            ctx.fillText('□', 0, 100);
-            const baseline = ctx.getImageData(0, 0, size, size);
-
-            // チェックする文字を描画
-            ctx.clearRect(0, 0, size, size);
-            ctx.fillText(char, 0, 100);
-            const charImage = ctx.getImageData(0, 0, size, size);
-
-            // 基準の豆腐と比較
-            for (let i = 0; i < baseline.data.length; i++) {
-                if (baseline.data[i] !== charImage.data[i]) {
-                    return true; // 違いがあれば表示可能な文字
-                }
+            if (textLength > maxTextLength) {
+                document.getElementById('embedTextCount').classList.add('warning');
+                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${maxTextLength} を超えています！）`;
+            } else {
+                document.getElementById('embedTextCount').classList.remove('warning');
             }
-            return false; // 同じなら表示不可
+        }
+
+        // テキストを画像に埋め込む関数
+        function embedText() {
+            const text = document.getElementById('textInput').value;
+            const textLength = new TextEncoder().encode(text).length;
+            if (!imgData || !text) {
+                alert("画像とテキストを入力してください");
+                return;
+            }
+
+            if (textLength > maxTextLength) {
+                alert(`テキストが長すぎます。最大 ${maxTextLength} バイトまで埋め込むことができます。`);
+                return;
+            }
+
+            const encoder = new TextEncoder();
+            const binaryText = Array.from(encoder.encode(text)).map(byte => byte.toString(2).padStart(8, '0')).join('');
+            const textLengthBinary = (binaryText.length / 8).toString(2).padStart(32, '0'); // バイト単位でテキスト長を埋め込む
+
+            let pixelIndex = 0;
+
+            // テキスト長さを最初に埋め込む（32ビット）
+            for (let i = 0; i < textLengthBinary.length; i++) {
+                const bit = parseInt(textLengthBinary[i]);
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
+                pixelIndex += 4;
+            }
+
+            // テキストをRGB全てのビットに分散して埋め込む
+            for (let i = 0; i < binaryText.length; i++) {
+                const bit = parseInt(binaryText[i]);
+                const colorChannel = i % 3; // RGBを順に使用
+                imgData.data[pixelIndex + colorChannel] = (imgData.data[pixelIndex + colorChannel] & 0xFE) | bit;
+                if (colorChannel === 2) pixelIndex += 4; // R, G, Bで1ピクセル進む
+            }
+
+            const ctx = document.getElementById('canvas').getContext('2d');
+            ctx.putImageData(imgData, 0, 0);
+
+            // 埋め込んだ後の画像をプレビューに表示
+            const dataUrl = canvas.toDataURL();
+            document.getElementById('outputPreviewImage').src = dataUrl;
+
+            alert("テキストが画像に埋め込まれました");
+        }
+
+        // 画像からテキストを抽出する関数
+        function extractText() {
+            if (!imgData) {
+                alert("画像をアップロードしてください");
+                return;
+            }
+
+            let binaryText = '';
+            let pixelIndex = 0;
+
+            // まずテキストの長さを取得する（32ビット）
+            let binaryLength = '';
+            for (let i = 0; i < 32; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                binaryLength += bit;
+                pixelIndex += 4;
+            }
+            const textLength = parseInt(binaryLength, 2);
+
+            // テキストの長さに従ってビットを抽出
+            for (let i = 0; i < textLength * 8; i++) {
+                const bit = imgData.data[pixelIndex + (i % 3)] & 1; // RGB全てのビットから抽出
+                binaryText += bit;
+                if (i % 3 === 2) pixelIndex += 4; // 1ピクセル分進む
+            }
+
+            const byteArray = [];
+            for (let i = 0; i < binaryText.length; i += 8) {
+                byteArray.push(parseInt(binaryText.slice(i, i + 8), 2));
+            }
+
+            const decoder = new TextDecoder();
+            const extractedText = decoder.decode(new Uint8Array(byteArray));
+            document.getElementById('extractedText').innerText = extractedText;
+        }
+
+        // 埋め込み後の画像をダウンロード
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            const link = document.createElement('a');
+            link.download = 'stego_image.png';
+            link.href = canvas.toDataURL();
+            link.click();
         }
     </script>
 </body>
