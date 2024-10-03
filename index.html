@@ -34,7 +34,7 @@
             margin: 5px 0;
             color: #666;
         }
-        input[type="file"], input[type="text"], textarea, button, select, input[type="password"] {
+        input[type="file"], input[type="text"], textarea, button, select, input[type="password"], .save-options {
             margin-top: 10px;
             padding: 10px;
             font-size: 16px;
@@ -125,15 +125,24 @@
                 <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
+            <p id="embedCapacityInfo" class="info"></p>
             <div>
                 <label>
                     <input type="checkbox" id="usePassword"> パスワードを付ける
                 </label>
                 <input type="password" id="passwordInput" maxlength="4" placeholder="4桁のパスワード" style="display: none;">
             </div>
-            <p id="embedCapacityInfo" class="info"></p>
             <button onclick="embedData()">データを埋め込む</button>
-            <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <div class="save-options">
+                <label>
+                    保存先:
+                    <select id="saveOption">
+                        <option value="photo">写真アプリ</option>
+                        <option value="file">ファイルアプリ</option>
+                    </select>
+                </label>
+                <button onclick="downloadImage()">画像を保存</button>
+            </div>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
                 <p>アップロードした画像:</p>
@@ -161,6 +170,7 @@
                 <p>アップロードした画像:</p>
                 <img id="extractPreviewImage" src="" alt="プレビュー" />
             </div>
+            <button id="extractDataBtn" style="display: none;" onclick="extractActualData()">データを抽出</button>
         </div>
 
         <canvas id="canvas"></canvas>
@@ -269,6 +279,9 @@
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
+
+                    // 抽出ボタンを表示する
+                    document.getElementById('extractDataBtn').style.display = 'block';
                 };
                 img.src = event.target.result;
             };
@@ -466,9 +479,17 @@
         // 埋め込み後の画像をダウンロード
         function downloadImage() {
             const canvas = document.getElementById('canvas');
+            const saveOption = document.getElementById('saveOption').value;
             const link = document.createElement('a');
-            link.download = 'stego_image.png';
-            link.href = canvas.toDataURL();
+
+            if (saveOption === 'photo') {
+                link.download = 'stego_image.jpg';
+                link.href = canvas.toDataURL('image/jpeg');
+            } else {
+                link.download = 'stego_image.png';
+                link.href = canvas.toDataURL();
+            }
+
             link.click();
         }
     </script>
