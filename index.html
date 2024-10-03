@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ステガノグラフィー - 画像にテキストを埋め込み、抽出</title>
+    <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -34,7 +34,7 @@
             margin: 5px 0;
             color: #666;
         }
-        input[type="file"], input[type="text"], textarea, button {
+        input[type="file"], input[type="text"], textarea, button, select {
             margin-top: 10px;
             padding: 10px;
             font-size: 16px;
@@ -87,17 +87,27 @@
     </style>
 </head>
 <body>
-    <h1>画像にテキストを埋め込み、テキストを抽出する</h1>
+    <h1>画像に文字やファイルを埋め込む</h1>
 
     <div class="container">
         <div class="section">
-            <h3>1. 画像に文字を埋め込む</h3>
-            <p>PNGまたはJPEG形式の画像を選択し、隠したい文字を入力してください。</p>
+            <h3>1. 画像に文字やファイルを埋め込む</h3>
+            <p>PNGまたはJPEG形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
             <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
-            <textarea id="textInput" placeholder="隠したい文字を入力" oninput="checkTextSize()"></textarea>
+            <select id="embedOption" onchange="toggleInput()">
+                <option value="text">文字を埋め込む</option>
+                <option value="file">ファイルを埋め込む</option>
+            </select>
+            <div id="textInputContainer">
+                <textarea id="textInput" placeholder="隠したい文字を入力" oninput="checkTextSize()"></textarea>
+                <p id="embedTextCount" class="info"></p>
+            </div>
+            <div id="fileInputContainer" style="display:none;">
+                <input type="file" id="fileInput">
+                <p id="embedFileInfo" class="info"></p>
+            </div>
             <p id="embedCapacityInfo" class="info"></p>
-            <p id="embedTextCount" class="info"></p>
-            <button onclick="embedText()">テキストを埋め込む</button>
+            <button onclick="embedData()">データを埋め込む</button>
             <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
@@ -105,17 +115,17 @@
                 <img id="embedPreviewImage" src="" alt="プレビュー" />
             </div>
             <div class="image-preview" id="outputImagePreview">
-                <p>文字を埋め込んだ後の画像:</p>
+                <p>データを埋め込んだ後の画像:</p>
                 <img id="outputPreviewImage" src="" alt="プレビュー" />
             </div>
         </div>
 
         <div class="section">
-            <h3>2. 画像から文字を抽出</h3>
-            <p>テキストが埋め込まれている画像を選択してください。</p>
+            <h3>2. 画像から文字またはファイルを抽出</h3>
+            <p>データが埋め込まれている画像を選択してください。</p>
             <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
-            <button onclick="extractText()">テキストを抽出</button>
-            <p id="extractedText"></p>
+            <button onclick="extractData()">データを抽出</button>
+            <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
             <div class="image-preview" id="extractImagePreview">
                 <p>アップロードした画像:</p>
@@ -128,7 +138,7 @@
 
     <script>
         let imgData;
-        let maxTextLength = 0;
+        let maxDataBytes = 0;
 
         // ファイルの拡張子とMIMEタイプをチェックし、非対応の場合はエラーメッセージを表示
         function validateImageFile(file) {
@@ -168,75 +178,120 @@
                     // 画像詳細情報を表示
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    const maxTextBytes = Math.floor(pixelCount * 3 / 8); // 最大バイト数を計算
-                    maxTextLength = maxTextBytes; // 1バイト=1文字のため
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8); // 最大バイト数を計算
                     document.getElementById(detailsId).innerText = 
-                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${fileSizeKB} KB\n画像形式: ${file.type}\n埋め込める最大バイト数: ${maxTextBytes} バイト`;
+                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${fileSizeKB} KB\n画像形式: ${file.type}\n埋め込める最大バイト数: ${maxDataBytes} バイト`;
                     
-                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${maxTextBytes} バイト（${maxTextBytes} 文字）まで埋め込むことができます。`;
+                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${maxDataBytes} バイトまで埋め込むことができます。`;
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        // 画像プレビューと詳細情報を表示（文字埋め込み用）
+        // 画像プレビューと詳細情報を表示（埋め込み用）
         document.getElementById('embedImageInput').addEventListener('change', function(e) {
             handleImageUpload(e, 'embedPreviewImage', 'canvas', 'embedImageDetails');
         });
 
-        // 画像プレビューと詳細情報を表示（文字抽出用）
+        // 画像プレビューと詳細情報を表示（抽出用）
         document.getElementById('extractImageInput').addEventListener('change', function(e) {
             handleImageUpload(e, 'extractPreviewImage', 'canvas', 'extractImageDetails');
         });
 
-        // 入力テキストサイズをチェックし、警告を表示
+        // 入力タイプによってUIを切り替え
+        function toggleInput() {
+            const embedOption = document.getElementById('embedOption').value;
+            if (embedOption === 'file') {
+                document.getElementById('fileInputContainer').style.display = 'block';
+                document.getElementById('textInputContainer').style.display = 'none';
+            } else {
+                document.getElementById('fileInputContainer').style.display = 'none';
+                document.getElementById('textInputContainer').style.display = 'block';
+            }
+        }
+
+        // 入力文字数をチェックし、警告を表示
         function checkTextSize() {
             const text = document.getElementById('textInput').value;
             const textLength = new TextEncoder().encode(text).length; // UTF-8でのバイト数
             document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
             
-            if (textLength > maxTextLength) {
+            if (textLength > maxDataBytes) {
                 document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${maxTextLength} を超えています！）`;
+                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${maxDataBytes} を超えています！）`;
             } else {
                 document.getElementById('embedTextCount').classList.remove('warning');
             }
         }
 
-        // テキストを画像に埋め込む関数
-        function embedText() {
-            const text = document.getElementById('textInput').value;
-            const textLength = new TextEncoder().encode(text).length;
-            if (!imgData || !text) {
-                alert("画像とテキストを入力してください");
+        // テキストまたはファイルを画像に埋め込む関数
+        function embedData() {
+            const embedOption = document.getElementById('embedOption').value;
+            let binaryData;
+            let dataType;
+
+            if (!imgData) {
+                alert("画像をアップロードしてください");
                 return;
             }
 
-            if (textLength > maxTextLength) {
-                alert(`テキストが長すぎます。最大 ${maxTextLength} バイトまで埋め込むことができます。`);
+            if (embedOption === 'text') {
+                const text = document.getElementById('textInput').value;
+                const textLength = new TextEncoder().encode(text).length;
+                if (textLength > maxDataBytes) {
+                    alert(`テキストが長すぎます。最大 ${maxDataBytes} バイトまで埋め込むことができます。`);
+                    return;
+                }
+                binaryData = new TextEncoder().encode(text); // テキストをUTF-8にエンコードしてバイナリに変換
+                dataType = '0'; // 文字データの識別用
+            } else {
+                const file = document.getElementById('fileInput').files[0];
+                if (!file) {
+                    alert("ファイルを選択してください");
+                    return;
+                }
+                const fileSize = file.size;
+                if (fileSize > maxDataBytes) {
+                    alert(`ファイルが大きすぎます。最大 ${maxDataBytes} バイトまで埋め込むことができます。`);
+                    return;
+                }
+                const reader = new FileReader();
+                reader.onload = function(event) {
+                    binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
+                    dataType = '1'; // ファイルデータの識別用
+                    embedBinaryData(binaryData, dataType); // ファイルデータを埋め込む
+                };
+                reader.readAsArrayBuffer(file);
                 return;
             }
 
-            const encoder = new TextEncoder();
-            const binaryText = Array.from(encoder.encode(text)).map(byte => byte.toString(2).padStart(8, '0')).join('');
-            const textLengthBinary = (binaryText.length / 8).toString(2).padStart(32, '0'); // バイト単位でテキスト長を埋め込む
+            embedBinaryData(binaryData, dataType); // テキストデータを埋め込む
+        }
 
+        // バイナリデータを画像に埋め込む
+        function embedBinaryData(binaryData, dataType) {
             let pixelIndex = 0;
 
-            // テキスト長さを最初に埋め込む（32ビット）
-            for (let i = 0; i < textLengthBinary.length; i++) {
-                const bit = parseInt(textLengthBinary[i]);
+            // データタイプ（1ビット）を最初に埋め込む
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataType);
+            pixelIndex += 4;
+
+            // データの長さ（32ビット）を埋め込む
+            const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
+            for (let i = 0; i < dataLengthBinary.length; i++) {
+                const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 4;
             }
 
-            // テキストをRGB全てのビットに分散して埋め込む
-            for (let i = 0; i < binaryText.length; i++) {
-                const bit = parseInt(binaryText[i]);
-                const colorChannel = i % 3; // RGBを順に使用
-                imgData.data[pixelIndex + colorChannel] = (imgData.data[pixelIndex + colorChannel] & 0xFE) | bit;
-                if (colorChannel === 2) pixelIndex += 4; // R, G, Bで1ピクセル進む
+            // データ本体を埋め込む
+            for (let i = 0; i < binaryData.length; i++) {
+                const byte = binaryData[i].toString(2).padStart(8, '0');
+                for (let bit of byte) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
             }
 
             const ctx = document.getElementById('canvas').getContext('2d');
@@ -246,43 +301,57 @@
             const dataUrl = canvas.toDataURL();
             document.getElementById('outputPreviewImage').src = dataUrl;
 
-            alert("テキストが画像に埋め込まれました");
+            alert("データが画像に埋め込まれました");
         }
 
-        // 画像からテキストを抽出する関数
-        function extractText() {
+        // 画像からデータを抽出する関数
+        function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
                 return;
             }
 
-            let binaryText = '';
             let pixelIndex = 0;
 
-            // まずテキストの長さを取得する（32ビット）
+            // データタイプを最初に取得（1ビット）
+            const dataType = imgData.data[pixelIndex] & 1;
+            pixelIndex += 4;
+
+            // データの長さを取得（32ビット）
             let binaryLength = '';
             for (let i = 0; i < 32; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 binaryLength += bit;
                 pixelIndex += 4;
             }
-            const textLength = parseInt(binaryLength, 2);
+            const dataLength = parseInt(binaryLength, 2);
 
-            // テキストの長さに従ってビットを抽出
-            for (let i = 0; i < textLength * 8; i++) {
-                const bit = imgData.data[pixelIndex + (i % 3)] & 1; // RGB全てのビットから抽出
-                binaryText += bit;
-                if (i % 3 === 2) pixelIndex += 4; // 1ピクセル分進む
+            // データを取得
+            let binaryData = [];
+            for (let i = 0; i < dataLength; i++) {
+                let byte = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    byte += bit;
+                    pixelIndex += 4;
+                }
+                binaryData.push(parseInt(byte, 2));
             }
 
-            const byteArray = [];
-            for (let i = 0; i < binaryText.length; i += 8) {
-                byteArray.push(parseInt(binaryText.slice(i, i + 8), 2));
+            if (dataType === 0) {
+                // テキストデータとして扱う
+                const decoder = new TextDecoder();
+                const extractedText = decoder.decode(new Uint8Array(binaryData));
+                document.getElementById('extractedData').innerText = extractedText;
+            } else {
+                // ファイルデータとして扱う
+                const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'extracted_file';
+                link.click();
+                document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
             }
-
-            const decoder = new TextDecoder();
-            const extractedText = decoder.decode(new Uint8Array(byteArray));
-            document.getElementById('extractedText').innerText = extractedText;
         }
 
         // 埋め込み後の画像をダウンロード
