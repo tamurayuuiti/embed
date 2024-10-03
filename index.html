@@ -84,13 +84,19 @@
         .warning {
             color: red;
         }
-        .file-preview {
-            margin-top: 20px;
-            padding: 10px;
-            border: 1px solid #ccc;
-            background-color: #f1f1f1;
-            max-width: 100%;
-            word-wrap: break-word;
+        /* ドラッグ＆ドロップエリアのスタイル */
+        .drop-zone {
+            border: 2px dashed #ccc;
+            padding: 30px;
+            text-align: center;
+            margin-top: 10px;
+            cursor: pointer;
+        }
+        .drop-zone:hover {
+            border-color: #4CAF50;
+        }
+        .drop-zone.dragover {
+            background-color: #e1ffe1;
         }
     </style>
 </head>
@@ -101,7 +107,15 @@
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
             <p>PNGまたはJPEG形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
-            <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
+
+            <!-- ドラッグ＆ドロップ対応エリア -->
+            <div id="drop-zone" class="drop-zone">
+                ここに画像ファイルをドラッグ＆ドロップしてください
+                <br>または
+                <input type="file" id="embedImageInput" accept="image/png, image/jpeg" style="display: none;">
+                <button onclick="document.getElementById('embedImageInput').click()">画像ファイルを選択</button>
+            </div>
+
             <select id="embedOption" onchange="toggleInput()">
                 <option value="text">文字を埋め込む</option>
                 <option value="file">ファイルを埋め込む</option>
@@ -111,7 +125,13 @@
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
-                <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                <!-- ドラッグ＆ドロップ対応ファイル選択エリア -->
+                <div id="file-drop-zone" class="drop-zone">
+                    ここにファイルをドラッグ＆ドロップしてください
+                    <br>または
+                    <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg" style="display: none;">
+                    <button onclick="document.getElementById('fileInput').click()">ファイルを選択</button>
+                </div>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
@@ -163,6 +183,48 @@
             return true;
         }
 
+        // ドラッグ＆ドロップ対応: ドロップ時にファイルを選択
+        function setupDropZone(dropZoneId, inputId, handleFile) {
+            const dropZone = document.getElementById(dropZoneId);
+            const fileInput = document.getElementById(inputId);
+
+            dropZone.addEventListener('dragover', (event) => {
+                event.preventDefault();
+                dropZone.classList.add('dragover');
+            });
+
+            dropZone.addEventListener('dragleave', () => {
+                dropZone.classList.remove('dragover');
+            });
+
+            dropZone.addEventListener('drop', (event) => {
+                event.preventDefault();
+                dropZone.classList.remove('dragover');
+                const files = event.dataTransfer.files;
+                if (files.length > 0) {
+                    fileInput.files = files; // ファイルをinputに反映
+                    handleFile(); // ファイル処理を実行
+                }
+            });
+        }
+
+        // ドロップゾーンとファイル入力に対応するファイル処理を設定
+        setupDropZone('drop-zone', 'embedImageInput', () => handleImageUpload(null, 'embedPreviewImage', 'canvas', 'embedImageDetails'));
+        setupDropZone('file-drop-zone', 'fileInput', () => handleFileUpload());
+
+        // ファイルのアップロード（埋め込み用ファイル）
+        function handleFileUpload() {
+            const file = document.getElementById('fileInput').files[0];
+            if (file) {
+                const fileSizeKB = (file.size / 1024).toFixed(2);
+                if (file.size > maxDataBytes) {
+                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。ファイルサイズ: ${formatBytes(file.size)}`);
+                    return;
+                }
+                document.getElementById('embedFileInfo').innerText = `ファイル名: ${file.name}, サイズ: ${formatBytes(file.size)}`;
+            }
+        }
+
         // バイト数をKBまたはMBに変換して表示
         function formatBytes(bytes) {
             if (bytes >= 1048576) {
@@ -176,7 +238,7 @@
 
         // 画像をアップロードした時のエラーハンドリングと情報表示
         function handleImageUpload(event, previewImageId, canvasId, detailsId) {
-            const file = event.target.files[0];
+            const file = event ? event.target.files[0] : document.getElementById('embedImageInput').files[0];
             if (!validateImageFile(file)) {
                 return;
             }
@@ -274,7 +336,7 @@
                 }
                 const fileSize = file.size;
                 if (fileSize > maxDataBytes) {
-                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
+                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。ファイルサイズ: ${formatBytes(file.size)}`);
                     return;
                 }
                 const reader = new FileReader();
