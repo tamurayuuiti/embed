@@ -84,6 +84,14 @@
         .warning {
             color: red;
         }
+        .file-preview {
+            margin-top: 20px;
+            padding: 10px;
+            border: 1px solid #ccc;
+            background-color: #f1f1f1;
+            max-width: 100%;
+            word-wrap: break-word;
+        }
     </style>
 </head>
 <body>
@@ -103,8 +111,8 @@
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
-                <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg">
-                <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg</p>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
             <button onclick="embedData()">データを埋め込む</button>
@@ -125,6 +133,7 @@
             <p>データが埋め込まれている画像を選択してください。</p>
             <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
             <button onclick="extractData()">データを抽出</button>
+            <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
             <div class="image-preview" id="extractImagePreview">
@@ -332,7 +341,7 @@
             alert("データが画像に埋め込まれました");
         }
 
-        // 画像からデータを抽出する関数
+        // 画像からデータを抽出し、プレビューを表示
         function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -387,18 +396,53 @@
                 binaryData.push(parseInt(byte, 2));
             }
 
+            const extractedFilePreview = document.getElementById('extractedFilePreview');
+
             if (dataType === 0) {
                 // テキストデータとして扱う
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
                 document.getElementById('extractedData').innerText = extractedText;
+                extractedFilePreview.innerHTML = `<pre>${extractedText}</pre>`;
             } else {
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+
+                // ファイルの種類ごとにプレビューを生成
+                switch (fileExtension) {
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                        extractedFilePreview.innerHTML = `<img src="${url}" alt="プレビュー画像" style="max-width:100%;">`;
+                        break;
+                    case 'txt':
+                    case 'csv':
+                    case 'json':
+                        blob.text().then(text => extractedFilePreview.innerHTML = `<pre>${text}</pre>`);
+                        break;
+                    case 'pdf':
+                        extractedFilePreview.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="500px" />`;
+                        break;
+                    case 'mp3':
+                    case 'wav':
+                    case 'ogg':
+                        extractedFilePreview.innerHTML = `<audio controls><source src="${url}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
+                        break;
+                    case 'mp4':
+                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${url}" type="video/mp4">動画プレビュー非対応</video>`;
+                        break;
+                    default:
+                        extractedFilePreview.innerHTML = `プレビューできません: .${fileExtension}`;
+                }
+
                 const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
+                link.href = url;
                 link.download = `extracted_file.${fileExtension}`;
-                link.click();
+                link.textContent = `extracted_file.${fileExtension} をダウンロード`;
+                extractedFilePreview.appendChild(link);
+
                 document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
             }
         }
