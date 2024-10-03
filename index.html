@@ -34,7 +34,7 @@
             margin: 5px 0;
             color: #666;
         }
-        input[type="file"], input[type="text"], textarea, button, select, input[type="password"], .save-options {
+        input[type="file"], input[type="text"], textarea, button, select {
             margin-top: 10px;
             padding: 10px;
             font-size: 16px;
@@ -92,16 +92,6 @@
             max-width: 100%;
             word-wrap: break-word;
         }
-        #dragDropZone {
-            border: 2px dashed #ccc;
-            padding: 20px;
-            text-align: center;
-            margin-top: 20px;
-            background-color: #fafafa;
-        }
-        #dragDropZone.dragover {
-            background-color: #e8f0fe;
-        }
     </style>
 </head>
 <body>
@@ -111,7 +101,6 @@
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
             <p>PNGまたはJPEG形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
-            <div id="dragDropZone">ここにファイルをドラッグ＆ドロップしてください</div>
             <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             <select id="embedOption" onchange="toggleInput()">
                 <option value="text">文字を埋め込む</option>
@@ -126,23 +115,8 @@
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
-            <div>
-                <label>
-                    <input type="checkbox" id="usePassword"> パスワードを付ける
-                </label>
-                <input type="password" id="passwordInput" maxlength="4" placeholder="4桁のパスワード" style="display: none;">
-            </div>
             <button onclick="embedData()">データを埋め込む</button>
-            <div class="save-options">
-                <label>
-                    保存先:
-                    <select id="saveOption">
-                        <option value="photo">写真アプリ</option>
-                        <option value="file">ファイルアプリ</option>
-                    </select>
-                </label>
-                <button onclick="downloadImage()">画像を保存</button>
-            </div>
+            <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
                 <p>アップロードした画像:</p>
@@ -158,11 +132,7 @@
             <h3>2. 画像から文字またはファイルを抽出</h3>
             <p>データが埋め込まれている画像を選択してください。</p>
             <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
-            <div id="passwordPrompt" style="display:none;">
-                <p>パスワードを入力してください:</p>
-                <input type="password" id="extractPasswordInput" maxlength="4">
-                <button onclick="verifyPassword()">確認</button>
-            </div>
+            <button onclick="extractData()">データを抽出</button>
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
@@ -170,7 +140,6 @@
                 <p>アップロードした画像:</p>
                 <img id="extractPreviewImage" src="" alt="プレビュー" />
             </div>
-            <button id="extractDataBtn" style="display: none;" onclick="extractActualData()">データを抽出</button>
         </div>
 
         <canvas id="canvas"></canvas>
@@ -179,51 +148,6 @@
     <script>
         let imgData;
         let maxDataBytes = 0;
-        let embeddedPassword = '';
-        let isPasswordProtected = false;
-
-        // ファイルサイズ警告
-        function showSizeWarning(fileSize, maxSize) {
-            alert(`ファイルが大きすぎます。最大 ${formatBytes(maxSize)} まで埋め込むことができますが、選択されたファイルは ${formatBytes(fileSize)} です。`);
-        }
-
-        // Drag-and-Drop対応
-        const dragDropZone = document.getElementById('dragDropZone');
-        dragDropZone.addEventListener('dragover', (event) => {
-            event.preventDefault();
-            dragDropZone.classList.add('dragover');
-        });
-        dragDropZone.addEventListener('dragleave', () => {
-            dragDropZone.classList.remove('dragover');
-        });
-        dragDropZone.addEventListener('drop', (event) => {
-            event.preventDefault();
-            dragDropZone.classList.remove('dragover');
-            const file = event.dataTransfer.files[0];
-            handleImageUpload({ target: { files: [file] } }, 'embedPreviewImage', 'canvas', 'embedImageDetails');
-        });
-
-        // パスワード使用のチェック
-        document.getElementById('usePassword').addEventListener('change', function() {
-            const passwordInput = document.getElementById('passwordInput');
-            if (this.checked) {
-                passwordInput.style.display = 'inline';
-            } else {
-                passwordInput.style.display = 'none';
-                passwordInput.value = '';
-            }
-        });
-
-        // パスワードの検証
-        function verifyPassword() {
-            const enteredPassword = document.getElementById('extractPasswordInput').value;
-            if (enteredPassword === embeddedPassword) {
-                alert('パスワードが正しいです。データを表示します。');
-                extractActualData();  // 実際のデータ抽出
-            } else {
-                alert('パスワードが間違っています。');
-            }
-        }
 
         // ファイルの拡張子とMIMEタイプをチェックし、非対応の場合はエラーメッセージを表示
         function validateImageFile(file) {
@@ -279,9 +203,6 @@
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
-
-                    // 抽出ボタンを表示する
-                    document.getElementById('extractDataBtn').style.display = 'block';
                 };
                 img.src = event.target.result;
             };
@@ -330,28 +251,17 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
-            let passwordBinary = '';
-            const usePassword = document.getElementById('usePassword').checked;
 
             if (!imgData) {
                 alert("画像をアップロードしてください");
                 return;
             }
 
-            if (usePassword) {
-                const password = document.getElementById('passwordInput').value;
-                if (password.length !== 4 || isNaN(password)) {
-                    alert("パスワードは4桁の数字でなければなりません。");
-                    return;
-                }
-                passwordBinary = password.split('').map(digit => parseInt(digit).toString(2).padStart(8, '0')).join('');
-            }
-
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
                 const textLength = new TextEncoder().encode(text).length;
                 if (textLength > maxDataBytes) {
-                    showSizeWarning(textLength, maxDataBytes);
+                    alert(`テキストが長すぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
                     return;
                 }
                 binaryData = new TextEncoder().encode(text); // テキストをUTF-8にエンコードしてバイナリに変換
@@ -364,7 +274,7 @@
                 }
                 const fileSize = file.size;
                 if (fileSize > maxDataBytes) {
-                    showSizeWarning(fileSize, maxDataBytes);
+                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
                     return;
                 }
                 const reader = new FileReader();
@@ -372,30 +282,22 @@
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
                     dataType = '1'; // ファイルデータの識別用
                     fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
-                    embedBinaryData(binaryData, dataType, fileExtension, passwordBinary); // ファイルデータを埋め込む
+                    embedBinaryData(binaryData, dataType, fileExtension); // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension, passwordBinary); // テキストデータを埋め込む
+            embedBinaryData(binaryData, dataType, fileExtension); // テキストデータを埋め込む
         }
 
         // バイナリデータを画像に埋め込む
-        function embedBinaryData(binaryData, dataType, fileExtension, passwordBinary) {
+        function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
 
             // データタイプ（1ビット）を最初に埋め込む
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataType);
             pixelIndex += 4;
-
-            // パスワードを埋め込む
-            if (passwordBinary) {
-                for (let i = 0; i < passwordBinary.length; i++) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(passwordBinary[i]);
-                    pixelIndex += 4;
-                }
-            }
 
             // データの長さ（32ビット）を埋め込む
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
@@ -439,7 +341,7 @@
             alert("データが画像に埋め込まれました");
         }
 
-        // 画像からデータを抽出し、パスワード確認が必要な場合は表示
+        // 画像からデータを抽出し、プレビューを表示
         function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -452,44 +354,105 @@
             const dataType = imgData.data[pixelIndex] & 1;
             pixelIndex += 4;
 
-            // パスワードが設定されているか確認
-            if (document.getElementById('usePassword').checked) {
-                let passwordBinary = '';
-                for (let i = 0; i < 32; i++) {
+            // データの長さを取得（32ビット）
+            let binaryLength = '';
+            for (let i = 0; i < 32; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                binaryLength += bit;
+                pixelIndex += 4;
+            }
+            const dataLength = parseInt(binaryLength, 2);
+
+            // 拡張子の長さを取得（8ビット）
+            let extLengthBinary = '';
+            for (let i = 0; i < 8; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                extLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const extLength = parseInt(extLengthBinary, 2);
+
+            // 拡張子を取得
+            let fileExtension = '';
+            for (let i = 0; i < extLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
-                    passwordBinary += bit;
+                    charBinary += bit;
                     pixelIndex += 4;
                 }
-                embeddedPassword = String.fromCharCode(parseInt(passwordBinary.slice(0, 8), 2)) + 
-                                  String.fromCharCode(parseInt(passwordBinary.slice(8, 16), 2)) + 
-                                  String.fromCharCode(parseInt(passwordBinary.slice(16, 24), 2)) + 
-                                  String.fromCharCode(parseInt(passwordBinary.slice(24, 32), 2));
-
-                document.getElementById('passwordPrompt').style.display = 'block';
-            } else {
-                extractActualData(); // パスワードなしで実際のデータを抽出
+                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
-        }
 
-        // パスワードなしでデータを抽出
-        function extractActualData() {
-            // データの長さと拡張子の処理などをここに実装
+            // データを取得
+            let binaryData = [];
+            for (let i = 0; i < dataLength; i++) {
+                let byte = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    byte += bit;
+                    pixelIndex += 4;
+                }
+                binaryData.push(parseInt(byte, 2));
+            }
+
+            const extractedFilePreview = document.getElementById('extractedFilePreview');
+
+            if (dataType === 0) {
+                // テキストデータとして扱う
+                const decoder = new TextDecoder();
+                const extractedText = decoder.decode(new Uint8Array(binaryData));
+                document.getElementById('extractedData').innerText = extractedText;
+                extractedFilePreview.innerHTML = `<pre>${extractedText}</pre>`;
+            } else {
+                // ファイルデータとして扱う
+                const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+                const url = URL.createObjectURL(blob);
+
+                // ファイルの種類ごとにプレビューを生成
+                switch (fileExtension) {
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                        extractedFilePreview.innerHTML = `<img src="${url}" alt="プレビュー画像" style="max-width:100%;">`;
+                        break;
+                    case 'txt':
+                    case 'csv':
+                    case 'json':
+                        blob.text().then(text => extractedFilePreview.innerHTML = `<pre>${text}</pre>`);
+                        break;
+                    case 'pdf':
+                        extractedFilePreview.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="500px" />`;
+                        break;
+                    case 'mp3':
+                    case 'wav':
+                    case 'ogg':
+                        extractedFilePreview.innerHTML = `<audio controls><source src="${url}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
+                        break;
+                    case 'mp4':
+                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${url}" type="video/mp4">動画プレビュー非対応</video>`;
+                        break;
+                    default:
+                        extractedFilePreview.innerHTML = `プレビューできません: .${fileExtension}`;
+                }
+
+                const link = document.createElement('a');
+                link.href = url;
+                link.download = `extracted_file.${fileExtension}`;
+                link.textContent = `extracted_file.${fileExtension} をダウンロード`;
+                extractedFilePreview.appendChild(link);
+
+                document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
+            }
         }
 
         // 埋め込み後の画像をダウンロード
         function downloadImage() {
             const canvas = document.getElementById('canvas');
-            const saveOption = document.getElementById('saveOption').value;
             const link = document.createElement('a');
-
-            if (saveOption === 'photo') {
-                link.download = 'stego_image.jpg';
-                link.href = canvas.toDataURL('image/jpeg');
-            } else {
-                link.download = 'stego_image.png';
-                link.href = canvas.toDataURL();
-            }
-
+            link.download = 'stego_image.png';
+            link.href = canvas.toDataURL();
             link.click();
         }
     </script>
