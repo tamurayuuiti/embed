@@ -522,8 +522,10 @@
                 // テキストデータとして扱う
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
-                document.getElementById('extractedData').innerText = extractedText;
-                extractedFilePreview.innerHTML = `<pre>${extractedText}</pre>`;
+                
+                // 2重に表示されないよう修正
+                document.getElementById('extractedData').innerText = extractedText.trim();
+                extractedFilePreview.innerHTML = `<pre>${extractedText.trim()}</pre>`;
             } else {
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
