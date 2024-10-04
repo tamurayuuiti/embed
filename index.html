@@ -172,6 +172,20 @@
             }
         }
 
+        // テキストの長さをチェックし、警告を表示する関数
+        function checkTextSize() {
+            const text = document.getElementById('textInput').value;
+            const textLength = new TextEncoder().encode(text).length; // UTF-8でのバイト数
+            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
+            
+            if (textLength > maxDataBytes) {
+                document.getElementById('embedTextCount').classList.add('warning');
+                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
+            } else {
+                document.getElementById('embedTextCount').classList.remove('warning');
+            }
+        }
+
         // 画像をアップロードした時のエラーハンドリングと情報表示
         function handleImageUpload(file) {
             const reader = new FileReader();
