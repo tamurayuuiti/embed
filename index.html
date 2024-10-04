@@ -250,7 +250,6 @@
             const embedOption = document.getElementById('embedOption').value;
             let binaryData;
             let dataType;
-            let fileExtension = '';
 
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -281,18 +280,17 @@
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
                     dataType = '1'; // ファイルデータの識別用
-                    fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
-                    embedBinaryData(binaryData, dataType, fileExtension); // ファイルデータを埋め込む
+                    embedBinaryData(binaryData, dataType); // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension); // テキストデータを埋め込む
+            embedBinaryData(binaryData, dataType); // テキストデータを埋め込む
         }
 
         // バイナリデータを画像に埋め込む
-        function embedBinaryData(binaryData, dataType, fileExtension) {
+        function embedBinaryData(binaryData, dataType) {
             let pixelIndex = 0;
 
             // データタイプ（1ビット）を最初に埋め込む
@@ -305,21 +303,6 @@
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 4;
-            }
-
-            // 拡張子の長さ（8ビット）と拡張子を埋め込む
-            const extLength = fileExtension.length.toString(2).padStart(8, '0');
-            for (let i = 0; i < extLength.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLength[i]);
-                pixelIndex += 4;
-            }
-
-            for (let i = 0; i < fileExtension.length; i++) {
-                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
             }
 
             // データ本体を埋め込む
@@ -363,27 +346,6 @@
             }
             const dataLength = parseInt(binaryLength, 2);
 
-            // 拡張子の長さを取得（8ビット）
-            let extLengthBinary = '';
-            for (let i = 0; i < 8; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                extLengthBinary += bit;
-                pixelIndex += 4;
-            }
-            const extLength = parseInt(extLengthBinary, 2);
-
-            // 拡張子を取得
-            let fileExtension = '';
-            for (let i = 0; i < extLength; i++) {
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
-            }
-
             // データを取得
             let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
@@ -409,40 +371,8 @@
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
 
-                // ファイルの種類ごとにプレビューを生成
-                switch (fileExtension) {
-                    case 'png':
-                    case 'jpg':
-                    case 'jpeg':
-                    case 'gif':
-                        extractedFilePreview.innerHTML = `<img src="${url}" alt="プレビュー画像" style="max-width:100%;">`;
-                        break;
-                    case 'txt':
-                    case 'csv':
-                    case 'json':
-                        blob.text().then(text => extractedFilePreview.innerHTML = `<pre>${text}</pre>`);
-                        break;
-                    case 'pdf':
-                        extractedFilePreview.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="500px" />`;
-                        break;
-                    case 'mp3':
-                    case 'wav':
-                    case 'ogg':
-                        extractedFilePreview.innerHTML = `<audio controls><source src="${url}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
-                        break;
-                    case 'mp4':
-                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${url}" type="video/mp4">動画プレビュー非対応</video>`;
-                        break;
-                    default:
-                        extractedFilePreview.innerHTML = `プレビューできません: .${fileExtension}`;
-                }
-
-                const link = document.createElement('a');
-                link.href = url;
-                link.download = `extracted_file.${fileExtension}`;
-                link.textContent = `extracted_file.${fileExtension} をダウンロード`;
-                extractedFilePreview.appendChild(link);
-
+                // ファイルのプレビューを生成
+                extractedFilePreview.innerHTML = `<a href="${url}" download="extracted_file">抽出されたファイルをダウンロード</a>`;
                 document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
             }
         }
@@ -458,3 +388,4 @@
     </script>
 </body>
 </html>
+
