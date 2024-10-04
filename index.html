@@ -84,20 +84,6 @@
         .warning {
             color: red;
         }
-        /* ドラッグ＆ドロップエリアのスタイル */
-        .drop-zone {
-            border: 2px dashed #ccc;
-            padding: 30px;
-            text-align: center;
-            margin-top: 10px;
-            cursor: pointer;
-        }
-        .drop-zone:hover {
-            border-color: #4CAF50;
-        }
-        .drop-zone.dragover {
-            background-color: #e1ffe1;
-        }
     </style>
 </head>
 <body>
@@ -106,9 +92,8 @@
     <div class="container">
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
-            <p>PNG、JPEG、またはHEIF形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
+            <p>PNG、JPEG、HEIF形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
 
-            <!-- ドラッグ＆ドロップ対応エリア -->
             <div id="drop-zone" class="drop-zone">
                 ここに画像ファイルをドラッグ＆ドロップしてください
                 <br>または
@@ -125,7 +110,6 @@
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
-                <!-- ドラッグ＆ドロップ対応ファイル選択エリア -->
                 <div id="file-drop-zone" class="drop-zone">
                     ここにファイルをドラッグ＆ドロップしてください
                     <br>または
@@ -177,7 +161,7 @@
             const fileExtension = file.name.split('.').pop().toLowerCase();
 
             if (!validTypes.includes(fileType) || !validExtensions.includes(fileExtension)) {
-                alert("対応していないファイル形式です。PNG、JPEG、またはHEIF形式の画像を選択してください。");
+                alert("対応していないファイル形式です。PNG、JPEG、HEIF形式の画像を選択してください。");
                 return false;
             }
             return true;
@@ -260,7 +244,7 @@
                     // 画像詳細情報を表示
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8); // 最大バイト数を計算
+                    maxDataBytes = Math.floor((pixelCount * 3) / 8); // 埋め込めるデータ容量を計算
                     document.getElementById(detailsId).innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -313,6 +297,7 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
+            let fileName = '';
 
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -336,7 +321,7 @@
                 }
                 const fileSize = file.size;
                 if (fileSize > maxDataBytes) {
-                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。ファイルサイズ: ${formatBytes(file.size)}`);
+                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
                     return;
                 }
                 const reader = new FileReader();
@@ -344,17 +329,18 @@
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
                     dataType = '1'; // ファイルデータの識別用
                     fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
-                    embedBinaryData(binaryData, dataType, fileExtension); // ファイルデータを埋め込む
+                    fileName = file.name.split('.').slice(0, -1).join('.'); // ファイル名を取得
+                    embedBinaryData(binaryData, dataType, fileExtension, fileName); // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension); // テキストデータを埋め込む
+            embedBinaryData(binaryData, dataType, fileExtension, fileName); // テキストデータを埋め込む
         }
 
         // バイナリデータを画像に埋め込む
-        function embedBinaryData(binaryData, dataType, fileExtension) {
+        function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
             let pixelIndex = 0;
 
             // データタイプ（1ビット）を最初に埋め込む
@@ -369,7 +355,13 @@
                 pixelIndex += 4;
             }
 
-            // 拡張子の長さ（8ビット）と拡張子を埋め込む
+            // ファイル名と拡張子の長さとデータを埋め込む
+            const fileNameBinary = new TextEncoder().encode(fileName).toString(2).padStart(32, '0');
+            for (let i = 0; i < fileNameBinary.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameBinary[i]);
+                pixelIndex += 4;
+            }
+
             const extLength = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLength.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLength[i]);
@@ -418,20 +410,23 @@
 
             // データの長さを取得（32ビット）
             let binaryLength = '';
-            for (let i = 0;  i < 32; i++) {
+            for (let i = 0; i < 32; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 binaryLength += bit;
                 pixelIndex += 4;
             }
             const dataLength = parseInt(binaryLength, 2);
 
-            // 拡張子の長さを取得（8ビット）
+            // ファイル名と拡張子の長さを取得（8ビット）
+            let fileNameBinary = '';
             let extLengthBinary = '';
             for (let i = 0; i < 8; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
+                fileNameBinary += bit;
                 extLengthBinary += bit;
                 pixelIndex += 4;
             }
+            const fileName = new TextDecoder().decode(new Uint8Array(binaryData)).toString();
             const extLength = parseInt(extLengthBinary, 2);
 
             // 拡張子を取得
@@ -501,8 +496,8 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `extracted_file.${fileExtension}`;
-                link.textContent = `extracted_file.${fileExtension} をダウンロード`;
+                link.download = `${fileName}.${fileExtension}`;
+                link.textContent = `${fileName}.${fileExtension} をダウンロード`;
                 extractedFilePreview.appendChild(link);
 
                 document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
