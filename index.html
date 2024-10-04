@@ -150,8 +150,6 @@
 
             <!-- 常に表示するボタン -->
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
-            <button id="extractButton" onclick="extractData()">データを抽出する</button>
-
             <!-- ダウンロードボタンは非表示 -->
             <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
@@ -176,6 +174,10 @@
             <h3>2. 画像から文字またはファイルを抽出</h3>
             <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
             <p id="extractedFileName" class="info"></p>
+
+            <!-- 抽出ボタンをアップロードフィールドの近くに移動 -->
+            <button id="extractButton" onclick="extractData()">データを抽出する</button>
+
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
@@ -456,7 +458,7 @@
         }
 
         // 画像からデータを抽出し、ファイル名も含めて復元
-        function extractData() {
+        async function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
                 return;
@@ -498,7 +500,7 @@
                 fileName += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            // データを取得
+            // データを取得（非同期処理で分割し、負荷を軽減）
             let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
                 let byte = '';
@@ -508,6 +510,10 @@
                     pixelIndex += 4;
                 }
                 binaryData.push(parseInt(byte, 2));
+                if (i % 1000 === 0) {
+                    // 重い処理を分割し、UIのフリーズを防ぐ
+                    await new Promise(resolve => setTimeout(resolve, 0));
+                }
             }
 
             const extractedFilePreview = document.getElementById('extractedFilePreview');
@@ -521,7 +527,6 @@
             } else {
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
-                const url = URL.createObjectURL(blob);
                 const fileExtension = fileName.split('.').pop();
 
                 // ファイルの種類ごとにプレビューを生成
@@ -530,7 +535,7 @@
                     case 'jpg':
                     case 'jpeg':
                     case 'gif':
-                        extractedFilePreview.innerHTML = `<img src="${url}" alt="プレビュー画像" style="max-width:100%;">`;
+                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;">`;
                         break;
                     case 'txt':
                     case 'csv':
@@ -538,22 +543,22 @@
                         blob.text().then(text => extractedFilePreview.innerHTML = `<pre>${text}</pre>`);
                         break;
                     case 'pdf':
-                        extractedFilePreview.innerHTML = `<embed src="${url}" type="application/pdf" width="100%" height="500px" />`;
+                        extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
                         break;
                     case 'mp3':
                     case 'wav':
                     case 'ogg':
-                        extractedFilePreview.innerHTML = `<audio controls><source src="${url}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
+                        extractedFilePreview.innerHTML = `<audio controls><source src="${URL.createObjectURL(blob)}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
                         break;
                     case 'mp4':
-                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${url}" type="video/mp4">動画プレビュー非対応</video>`;
+                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${URL.createObjectURL(blob)}" type="video/mp4">動画プレビュー非対応</video>`;
                         break;
                     default:
                         extractedFilePreview.innerHTML = `プレビューできません: .${fileExtension}`;
                 }
 
                 const link = document.createElement('a');
-                link.href = url;
+                link.href = URL.createObjectURL(blob);
                 link.download = fileName;
                 link.textContent = `${fileName} をダウンロード`;
                 extractedFilePreview.appendChild(link);
@@ -563,13 +568,16 @@
             }
         }
 
-        // 埋め込み後の画像をダウンロード
+        // 埋め込み後の画像をデバイスに直接保存
         function downloadImage() {
             const canvas = document.getElementById('canvas');
-            const link = document.createElement('a');
-            link.download = 'stego_image.png';
-            link.href = canvas.toDataURL();
-            link.click();
+            canvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'stego_image.png';
+                link.click();
+                URL.revokeObjectURL(link.href); // メモリリーク防止のためURLを解放
+            });
         }
     </script>
 </body>
