@@ -142,7 +142,11 @@
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
-                <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                <div id="fileDropArea">
+                    <p>ここにファイルをドラッグ＆ドロップしてください</p>
+                    <p>または</p>
+                    <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                </div>
                 <p id="uploadedFileName" class="info"></p>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
@@ -172,7 +176,11 @@
 
         <div class="section">
             <h3>2. 画像から文字またはファイルを抽出</h3>
-            <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            <div id="extractDropArea">
+                <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
+                <p>または</p>
+                <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            </div>
             <p id="extractedFileName" class="info"></p>
 
             <!-- 抽出ボタンをアップロードフィールドの近くに移動 -->
@@ -312,6 +320,48 @@
                 handleImageUpload(file);
                 uploadedFileName = file.name;
                 document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+                // ファイル名を手動選択部分にも反映
+                document.getElementById('embedImageInput').files = e.dataTransfer.files;
+            }
+        });
+
+        // ファイルドロップ（埋め込み用ファイル）
+        const fileDropArea = document.getElementById('fileDropArea');
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.add('dragging');
+        });
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.classList.remove('dragging');
+        });
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            document.getElementById('uploadedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+            isFileUploaded = true;
+            // ファイル名を手動選択部分にも反映
+            document.getElementById('fileInput').files = e.dataTransfer.files;
+        });
+
+        // 抽出用ファイルのドロップエリア
+        const extractDropArea = document.getElementById('extractDropArea');
+        extractDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.add('dragging');
+        });
+        extractDropArea.addEventListener('dragleave', () => {
+            extractDropArea.classList.remove('dragging');
+        });
+        extractDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
+                document.getElementById('extractedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+                // ファイル名を手動選択部分にも反映
+                document.getElementById('extractImageInput').files = e.dataTransfer.files;
             }
         });
 
@@ -525,9 +575,9 @@
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
                 
-                // テキストを1回のみ表示するように修正
-                document.getElementById('extractedData').innerText = extractedText.trim();
+                // <pre>タグにのみ表示し、<p>タグへの表示を削除
                 extractedFilePreview.innerHTML = `<pre>${extractedText.trim()}</pre>`;
+                document.getElementById('extractedData').innerText = '';
             } else {
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
