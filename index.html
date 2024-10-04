@@ -156,6 +156,20 @@
         let isImageUploaded = false; // 画像アップロード状態を追跡
         let isFileUploaded = false; // ファイルアップロード状態を追跡
 
+        // ファイルタイプと拡張子を確認する関数
+        function validateImageFile(file) {
+            const validTypes = ['image/png', 'image/jpeg'];
+            const validExtensions = ['png', 'jpg', 'jpeg'];
+            const fileType = file.type;
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(fileType) || !validExtensions.includes(fileExtension)) {
+                alert("対応していないファイル形式です。PNGまたはJPEG形式の画像を選択してください。");
+                return false;
+            }
+            return true;
+        }
+
         // ファイルサイズの具体的な警告表示
         function displayFileSizeWarning(fileSize) {
             alert(`ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。`);
