@@ -101,7 +101,8 @@
             <h3>1. 画像に文字やファイルを埋め込む</h3>
             <div id="dropArea">
                 <p>ここに画像をドラッグ＆ドロップしてください</p>
-                <input type="file" id="embedImageInput" accept="image/png, image/jpeg" style="display: none;">
+                <p>または</p>
+                <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
@@ -241,14 +242,6 @@
             }
             return true;
         }
-
-        // 画像プレビューと詳細情報を表示（抽出用）
-        document.getElementById('extractImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-            }
-        });
 
         // 入力タイプによってUIを切り替え
         function toggleInput() {
