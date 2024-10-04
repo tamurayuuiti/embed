@@ -91,6 +91,17 @@
         #dropArea.dragging {
             border-color: #4CAF50;
         }
+        /* ドラックアンドドロップエリアの枠を小さくする */
+        #fileDropArea, #extractDropArea {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        #fileDropArea.dragging, #extractDropArea.dragging {
+            border-color: #4CAF50;
+        }
 
         /* canvas要素を非表示に */
         #canvas {
@@ -445,7 +456,7 @@
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
-                    dataType = '1'; // ファイルデータの識別用
+                    dataType = determineFileType(file.type); // ファイルタイプを取得
                     fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
                     fileName = file.name; // ファイル名も取得
                     embedBinaryData(binaryData, dataType, fileExtension, fileName); // ファイルデータを埋め込む
@@ -457,12 +468,28 @@
             embedBinaryData(binaryData, dataType, fileExtension, fileName); // テキストデータを埋め込む
         }
 
+        // ファイルタイプを決定する関数
+        function determineFileType(mimeType) {
+            const textTypes = ['text/plain', 'application/json', 'text/csv'];
+            const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
+            const audioTypes = ['audio/mp3', 'audio/wav', 'audio/ogg'];
+            const videoTypes = ['video/mp4'];
+            const pdfType = ['application/pdf'];
+
+            if (textTypes.includes(mimeType)) return 'text';
+            if (imageTypes.includes(mimeType)) return 'image';
+            if (audioTypes.includes(mimeType)) return 'audio';
+            if (videoTypes.includes(mimeType)) return 'video';
+            if (pdfType.includes(mimeType)) return 'pdf';
+            return 'unknown';
+        }
+
         // バイナリデータを画像に埋め込む
         function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
             let pixelIndex = 0;
 
             // データタイプ（1ビット）を最初に埋め込む
-            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataType);
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataType === 'text' ? '0' : '1');
             pixelIndex += 4;
 
             // データの長さ（32ビット）を埋め込む
@@ -519,7 +546,7 @@
             let pixelIndex = 0;
 
             // データタイプを最初に取得（1ビット）
-            const dataType = imgData.data[pixelIndex] & 1;
+            const dataType = imgData.data[pixelIndex] & 1 ? 'file' : 'text';
             pixelIndex += 4;
 
             // データの長さを取得（32ビット）
@@ -570,7 +597,7 @@
 
             const extractedFilePreview = document.getElementById('extractedFilePreview');
 
-            if (dataType === 0) {
+            if (dataType === 'text') {
                 // テキストデータとして扱う
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
