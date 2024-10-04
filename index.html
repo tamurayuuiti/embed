@@ -150,9 +150,11 @@
     </div>
 
     <script>
-        let imgData;
+        let imgData = null;
         let maxDataBytes = 0;
         let uploadedFileName = '';
+        let isImageUploaded = false; // 画像アップロード状態を追跡
+        let isFileUploaded = false; // ファイルアップロード状態を追跡
 
         // ファイルサイズの具体的な警告表示
         function displayFileSizeWarning(fileSize) {
@@ -194,6 +196,7 @@
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
+                    isImageUploaded = true; // 画像がアップロードされたことを設定
                 };
                 img.src = event.target.result;
             };
@@ -232,6 +235,7 @@
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             document.getElementById('uploadedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+            isFileUploaded = true; // ファイルがアップロードされたことを設定
         });
 
         // ファイルサイズの警告と処理の中断
@@ -263,8 +267,9 @@
             let fileExtension = '';
             let fileName = '';
 
-            if (!imgData) {
-                alert("画像をアップロードしてください");
+            // アップロードされた状態の確認
+            if (!isImageUploaded) {
+                alert("画像がアップロードされていません。");
                 return;
             }
 
@@ -276,12 +281,12 @@
                 binaryData = new TextEncoder().encode(text); // テキストをUTF-8にエンコードしてバイナリに変換
                 dataType = '0'; // 文字データの識別用
             } else {
-                const file = document.getElementById('fileInput').files[0];
-                if (!file) {
-                    alert("ファイルを選択してください");
+                if (!isFileUploaded) {
+                    alert("ファイルがアップロードされていません。");
                     return;
                 }
 
+                const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
                 if (!checkFileSize(fileSize)) return;
 
