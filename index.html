@@ -52,6 +52,7 @@
             border: none;
             cursor: pointer;
             margin-right: 10px;
+            display: none; /* 初期表示では隠しておく */
         }
         button:hover {
             background-color: #45a049;
@@ -96,6 +97,26 @@
         #canvas {
             display: none;
         }
+
+        /* インジケータ用のCSS */
+        #loadingIndicator {
+            display: none;
+            margin-top: 20px;
+            text-align: center;
+        }
+        .loader {
+            border: 6px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 6px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
     </style>
 </head>
 <body>
@@ -124,8 +145,8 @@
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
-            <button onclick="embedData()">データを埋め込む</button>
-            <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <button id="embedButton" onclick="embedData()">データを埋め込む</button>
+            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button> <!-- ダウンロードボタンは非表示 -->
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
                 <p>アップロードした画像（元画像）:</p>
@@ -134,6 +155,12 @@
             <div class="image-preview" id="outputImagePreview">
                 <p>データを埋め込んだ後の画像:</p>
                 <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+            </div>
+
+            <!-- ローディングインジケータ -->
+            <div id="loadingIndicator">
+                <div class="loader"></div>
+                <p>埋め込み中...</p>
             </div>
         </div>
 
@@ -334,6 +361,10 @@
                 return;
             }
 
+            // 埋め込み処理中のインジケータを表示
+            document.getElementById('loadingIndicator').style.display = 'block';
+            document.getElementById('embedButton').style.display = 'none'; // ボタンを一時的に非表示
+
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
                 const textLength = new TextEncoder().encode(text).length;
@@ -413,7 +444,9 @@
             const dataUrl = canvas.toDataURL();
             document.getElementById('outputPreviewImage').src = dataUrl;
 
-            alert("データが画像に埋め込まれました");
+            // 埋め込み完了後、ダウンロードボタンを有効化
+            document.getElementById('downloadButton').style.display = 'block';
+            document.getElementById('loadingIndicator').style.display = 'none'; // インジケータを非表示
         }
 
         // 画像からデータを抽出し、ファイル名も含めて復元
