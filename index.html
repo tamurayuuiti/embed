@@ -52,7 +52,6 @@
             border: none;
             cursor: pointer;
             margin-right: 10px;
-            display: none; /* 初期表示では隠しておく */
         }
         button:hover {
             background-color: #45a049;
@@ -116,7 +115,10 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
+        /* ダウンロードボタンは初期状態では非表示 */
+        #downloadButton {
+            display: none;
+        }
     </style>
 </head>
 <body>
@@ -145,8 +147,14 @@
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
+
+            <!-- 常に表示するボタン -->
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
-            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button> <!-- ダウンロードボタンは非表示 -->
+            <button id="extractButton" onclick="extractData()">データを抽出する</button>
+
+            <!-- ダウンロードボタンは非表示 -->
+            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
                 <p>アップロードした画像（元画像）:</p>
@@ -168,7 +176,6 @@
             <h3>2. 画像から文字またはファイルを抽出</h3>
             <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
             <p id="extractedFileName" class="info"></p>
-            <button onclick="extractData()">データを抽出</button>
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
@@ -355,7 +362,7 @@
             let fileExtension = '';
             let fileName = '';
 
-            // アップロードされた状態の確認
+            // 埋め込みの前に、画像がアップロードされているかチェック
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
                 return;
@@ -363,7 +370,6 @@
 
             // 埋め込み処理中のインジケータを表示
             document.getElementById('loadingIndicator').style.display = 'block';
-            document.getElementById('embedButton').style.display = 'none'; // ボタンを一時的に非表示
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
