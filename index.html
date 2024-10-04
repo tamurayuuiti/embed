@@ -123,12 +123,12 @@
             <button onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview">
-                <p>アップロードした画像:</p>
-                <img id="embedPreviewImage" src="" alt="プレビュー" />
+                <p>アップロードした画像（元画像）:</p>
+                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
             </div>
             <div class="image-preview" id="outputImagePreview">
                 <p>データを埋め込んだ後の画像:</p>
-                <img id="outputPreviewImage" src="" alt="プレビュー" />
+                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
             </div>
         </div>
 
@@ -141,8 +141,8 @@
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
             <div class="image-preview" id="extractImagePreview">
-                <p>アップロードした画像:</p>
-                <img id="extractPreviewImage" src="" alt="プレビュー" />
+                <p>アップロードした画像（抽出用）:</p>
+                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" />
             </div>
         </div>
 
@@ -213,7 +213,7 @@
                     ctx.drawImage(img, 0, 0);
                     imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-                    // プレビュー画像を表示
+                    // 元画像のプレビューを表示
                     document.getElementById('embedPreviewImage').src = event.target.result;
 
                     // 画像詳細情報を表示
@@ -231,7 +231,28 @@
             reader.readAsDataURL(file);
         }
 
-        // 画像ファイルをドラッグ＆ドロップ対応
+        // 抽出用の画像をアップロードした時の処理
+        function handleExtractImageUpload(file) {
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('canvas');
+                    const ctx = canvas.getContext('2d');
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    // 抽出用のプレビューを表示
+                    document.getElementById('extractPreviewImage').src = event.target.result;
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        // 画像ファイルをドラッグ＆ドロップ対応（元画像用）
         const dropArea = document.getElementById('dropArea');
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -257,6 +278,13 @@
                 handleImageUpload(file);
                 uploadedFileName = file.name;
                 document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+            }
+        });
+
+        document.getElementById('extractImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
             }
         });
 
