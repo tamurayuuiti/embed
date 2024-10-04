@@ -78,11 +78,18 @@
             margin-top: 10px;
             color: #333;
         }
-        #canvas {
-            display: none;
-        }
         .warning {
             color: red;
+        }
+        #dropArea {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        #dropArea.dragging {
+            border-color: #4CAF50;
         }
     </style>
 </head>
@@ -92,15 +99,11 @@
     <div class="container">
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
-            <p>PNG、JPEG、HEIF形式の画像を選択し、隠したいデータ（文字またはファイル）を入力してください。</p>
-
-            <div id="drop-zone" class="drop-zone">
-                ここに画像ファイルをドラッグ＆ドロップしてください
-                <br>または
-                <input type="file" id="embedImageInput" accept="image/png, image/jpeg, image/heif" style="display: none;">
-                <button onclick="document.getElementById('embedImageInput').click()">画像ファイルを選択</button>
+            <div id="dropArea">
+                <p>ここに画像をドラッグ＆ドロップしてください</p>
+                <input type="file" id="embedImageInput" accept="image/png, image/jpeg" style="display: none;">
             </div>
-
+            <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
                 <option value="text">文字を埋め込む</option>
                 <option value="file">ファイルを埋め込む</option>
@@ -110,12 +113,8 @@
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
-                <div id="file-drop-zone" class="drop-zone">
-                    ここにファイルをドラッグ＆ドロップしてください
-                    <br>または
-                    <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg" style="display: none;">
-                    <button onclick="document.getElementById('fileInput').click()">ファイルを選択</button>
-                </div>
+                <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                <p id="uploadedFileName" class="info"></p>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
@@ -134,8 +133,8 @@
 
         <div class="section">
             <h3>2. 画像から文字またはファイルを抽出</h3>
-            <p>データが埋め込まれている画像を選択してください。</p>
-            <input type="file" id="extractImageInput" accept="image/png, image/jpeg, image/heif">
+            <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            <p id="extractedFileName" class="info"></p>
             <button onclick="extractData()">データを抽出</button>
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
@@ -152,61 +151,11 @@
     <script>
         let imgData;
         let maxDataBytes = 0;
+        let uploadedFileName = '';
 
-        // ファイルの拡張子とMIMEタイプをチェックし、非対応の場合はエラーメッセージを表示
-        function validateImageFile(file) {
-            const validTypes = ['image/png', 'image/jpeg', 'image/heif'];
-            const validExtensions = ['png', 'jpg', 'jpeg', 'heif'];
-            const fileType = file.type;
-            const fileExtension = file.name.split('.').pop().toLowerCase();
-
-            if (!validTypes.includes(fileType) || !validExtensions.includes(fileExtension)) {
-                alert("対応していないファイル形式です。PNG、JPEG、HEIF形式の画像を選択してください。");
-                return false;
-            }
-            return true;
-        }
-
-        // ドラッグ＆ドロップ対応: ドロップ時にファイルを選択
-        function setupDropZone(dropZoneId, inputId, handleFile) {
-            const dropZone = document.getElementById(dropZoneId);
-            const fileInput = document.getElementById(inputId);
-
-            dropZone.addEventListener('dragover', (event) => {
-                event.preventDefault();
-                dropZone.classList.add('dragover');
-            });
-
-            dropZone.addEventListener('dragleave', () => {
-                dropZone.classList.remove('dragover');
-            });
-
-            dropZone.addEventListener('drop', (event) => {
-                event.preventDefault();
-                dropZone.classList.remove('dragover');
-                const files = event.dataTransfer.files;
-                if (files.length > 0) {
-                    fileInput.files = files; // ファイルをinputに反映
-                    handleFile(); // ファイル処理を実行
-                }
-            });
-        }
-
-        // ドロップゾーンとファイル入力に対応するファイル処理を設定
-        setupDropZone('drop-zone', 'embedImageInput', () => handleImageUpload(null, 'embedPreviewImage', 'canvas', 'embedImageDetails'));
-        setupDropZone('file-drop-zone', 'fileInput', () => handleFileUpload());
-
-        // ファイルのアップロード（埋め込み用ファイル）
-        function handleFileUpload() {
-            const file = document.getElementById('fileInput').files[0];
-            if (file) {
-                const fileSizeKB = (file.size / 1024).toFixed(2);
-                if (file.size > maxDataBytes) {
-                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。ファイルサイズ: ${formatBytes(file.size)}`);
-                    return;
-                }
-                document.getElementById('embedFileInfo').innerText = `ファイル名: ${file.name}, サイズ: ${formatBytes(file.size)}`;
-            }
+        // ファイルサイズの具体的な警告表示
+        function displayFileSizeWarning(fileSize) {
+            alert(`ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。`);
         }
 
         // バイト数をKBまたはMBに変換して表示
@@ -221,17 +170,12 @@
         }
 
         // 画像をアップロードした時のエラーハンドリングと情報表示
-        function handleImageUpload(event, previewImageId, canvasId, detailsId) {
-            const file = event ? event.target.files[0] : document.getElementById('embedImageInput').files[0];
-            if (!validateImageFile(file)) {
-                return;
-            }
-
+        function handleImageUpload(file) {
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    const canvas = document.getElementById(canvasId);
+                    const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d');
                     canvas.width = img.width;
                     canvas.height = img.height;
@@ -239,13 +183,13 @@
                     imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
                     // プレビュー画像を表示
-                    document.getElementById(previewImageId).src = event.target.result;
+                    document.getElementById('embedPreviewImage').src = event.target.result;
 
                     // 画像詳細情報を表示
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor((pixelCount * 3) / 8); // 埋め込めるデータ容量を計算
-                    document.getElementById(detailsId).innerText = 
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8); // 最大バイト数を計算
+                    document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
@@ -255,14 +199,55 @@
             reader.readAsDataURL(file);
         }
 
-        // 画像プレビューと詳細情報を表示（埋め込み用）
-        document.getElementById('embedImageInput').addEventListener('change', function(e) {
-            handleImageUpload(e, 'embedPreviewImage', 'canvas', 'embedImageDetails');
+        // 画像ファイルをドラッグ＆ドロップ対応
+        const dropArea = document.getElementById('dropArea');
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragging');
         });
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragging');
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (validateImageFile(file)) {
+                handleImageUpload(file);
+                uploadedFileName = file.name;
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+            }
+        });
+
+        document.getElementById('embedImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleImageUpload(file);
+                uploadedFileName = file.name;
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+            }
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            document.getElementById('uploadedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+        });
+
+        // ファイルサイズの警告と処理の中断
+        function checkFileSize(fileSize) {
+            if (fileSize > maxDataBytes) {
+                displayFileSizeWarning(fileSize);
+                return false;
+            }
+            return true;
+        }
 
         // 画像プレビューと詳細情報を表示（抽出用）
         document.getElementById('extractImageInput').addEventListener('change', function(e) {
-            handleImageUpload(e, 'extractPreviewImage', 'canvas', 'extractImageDetails');
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleImageUpload(file);
+            }
         });
 
         // 入力タイプによってUIを切り替え
@@ -274,20 +259,6 @@
             } else {
                 document.getElementById('fileInputContainer').style.display = 'none';
                 document.getElementById('textInputContainer').style.display = 'block';
-            }
-        }
-
-        // 入力文字数をチェックし、警告を表示
-        function checkTextSize() {
-            const text = document.getElementById('textInput').value;
-            const textLength = new TextEncoder().encode(text).length; // UTF-8でのバイト数
-            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
-            
-            if (textLength > maxDataBytes) {
-                document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
-            } else {
-                document.getElementById('embedTextCount').classList.remove('warning');
             }
         }
 
@@ -307,10 +278,8 @@
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
                 const textLength = new TextEncoder().encode(text).length;
-                if (textLength > maxDataBytes) {
-                    alert(`テキストが長すぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
-                    return;
-                }
+                if (!checkFileSize(textLength)) return;
+
                 binaryData = new TextEncoder().encode(text); // テキストをUTF-8にエンコードしてバイナリに変換
                 dataType = '0'; // 文字データの識別用
             } else {
@@ -319,17 +288,16 @@
                     alert("ファイルを選択してください");
                     return;
                 }
+
                 const fileSize = file.size;
-                if (fileSize > maxDataBytes) {
-                    alert(`ファイルが大きすぎます。最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`);
-                    return;
-                }
+                if (!checkFileSize(fileSize)) return;
+
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
                     dataType = '1'; // ファイルデータの識別用
                     fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
-                    fileName = file.name.split('.').slice(0, -1).join('.'); // ファイル名を取得
+                    fileName = file.name; // ファイル名も取得
                     embedBinaryData(binaryData, dataType, fileExtension, fileName); // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
@@ -355,21 +323,15 @@
                 pixelIndex += 4;
             }
 
-            // ファイル名と拡張子の長さとデータを埋め込む
-            const fileNameBinary = new TextEncoder().encode(fileName).toString(2).padStart(32, '0');
-            for (let i = 0; i < fileNameBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameBinary[i]);
+            // ファイル名の長さ（8ビット）とファイル名、拡張子を埋め込む
+            const fileNameLength = fileName.length.toString(2).padStart(8, '0');
+            for (let i = 0; i < fileNameLength.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameLength[i]);
                 pixelIndex += 4;
             }
 
-            const extLength = fileExtension.length.toString(2).padStart(8, '0');
-            for (let i = 0; i < extLength.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLength[i]);
-                pixelIndex += 4;
-            }
-
-            for (let i = 0; i < fileExtension.length; i++) {
-                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
+            for (let i = 0; i < fileName.length; i++) {
+                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 4;
@@ -395,7 +357,7 @@
             alert("データが画像に埋め込まれました");
         }
 
-        // 画像からデータを抽出し、プレビューを表示
+        // 画像からデータを抽出し、ファイル名も含めて復元
         function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -417,28 +379,25 @@
             }
             const dataLength = parseInt(binaryLength, 2);
 
-            // ファイル名と拡張子の長さを取得（8ビット）
-            let fileNameBinary = '';
-            let extLengthBinary = '';
+            // ファイル名の長さを取得（8ビット）
+            let fileNameLengthBinary = '';
             for (let i = 0; i < 8; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
-                fileNameBinary += bit;
-                extLengthBinary += bit;
+                fileNameLengthBinary += bit;
                 pixelIndex += 4;
             }
-            const fileName = new TextDecoder().decode(new Uint8Array(binaryData)).toString();
-            const extLength = parseInt(extLengthBinary, 2);
+            const fileNameLength = parseInt(fileNameLengthBinary, 2);
 
-            // 拡張子を取得
-            let fileExtension = '';
-            for (let i = 0; i < extLength; i++) {
+            // ファイル名を取得
+            let fileName = '';
+            for (let i = 0; i < fileNameLength; i++) {
                 let charBinary = '';
                 for (let j = 0; j < 8; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     charBinary += bit;
                     pixelIndex += 4;
                 }
-                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
+                fileName += String.fromCharCode(parseInt(charBinary, 2));
             }
 
             // データを取得
@@ -465,6 +424,7 @@
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
                 const url = URL.createObjectURL(blob);
+                const fileExtension = fileName.split('.').pop();
 
                 // ファイルの種類ごとにプレビューを生成
                 switch (fileExtension) {
@@ -496,11 +456,12 @@
 
                 const link = document.createElement('a');
                 link.href = url;
-                link.download = `${fileName}.${fileExtension}`;
-                link.textContent = `${fileName}.${fileExtension} をダウンロード`;
+                link.download = fileName;
+                link.textContent = `${fileName} をダウンロード`;
                 extractedFilePreview.appendChild(link);
 
                 document.getElementById('extractedData').innerText = "ファイルが抽出されました。";
+                document.getElementById('extractedFileName').innerText = `抽出されたファイル: ${fileName}`;
             }
         }
 
