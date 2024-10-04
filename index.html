@@ -442,7 +442,7 @@
                 if (!checkFileSize(textLength)) return;
 
                 binaryData = new TextEncoder().encode(text); // テキストをUTF-8にエンコードしてバイナリに変換
-                dataType = '0'; // 文字データの識別用
+                dataType = 'text'; // 文字データの識別用
             } else {
                 if (!isFileUploaded) {
                     alert("ファイルがアップロードされていません。");
@@ -489,7 +489,7 @@
             let pixelIndex = 0;
 
             // データタイプ（1ビット）を最初に埋め込む
-            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataType === 'text' ? '0' : '1');
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
 
             // データの長さ（32ビット）を埋め込む
@@ -546,7 +546,7 @@
             let pixelIndex = 0;
 
             // データタイプを最初に取得（1ビット）
-            const dataType = imgData.data[pixelIndex] & 1 ? 'file' : 'text';
+            const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
 
             // データの長さを取得（32ビット）
@@ -597,7 +597,7 @@
 
             const extractedFilePreview = document.getElementById('extractedFilePreview');
 
-            if (dataType === 'text') {
+            if (!isFile) {
                 // テキストデータとして扱う
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
