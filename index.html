@@ -10,11 +10,6 @@
             margin: 20px;
             background-color: #f9f9f9;
         }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 40px;
-        }
         .container {
             max-width: 85%; /* 大枠を少し大きく */
             margin: 0 auto;
@@ -160,8 +155,6 @@
     </style>
 </head>
 <body>
-    <h1>画像に文字やファイルを埋め込む</h1>
-
     <div class="container">
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
@@ -328,6 +321,9 @@
         }
 
         function handleExtractImageUpload(file) {
+            resetUI();
+            document.getElementById('extractLoadingIndicator').style.display = 'block';
+
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
@@ -341,6 +337,7 @@
 
                     document.getElementById('extractPreviewImage').src = event.target.result;
                     document.getElementById('extractImagePreview').style.display = 'block';
+                    document.getElementById('extractLoadingIndicator').style.display = 'none';
                 };
                 img.src = event.target.result;
             };
