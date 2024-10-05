@@ -47,7 +47,7 @@
             resize: vertical;
         }
         button {
-            background-color: #adb5bd; /* 彩度の低い灰色 */
+            background-color: #6c757d; /* 彩度の低い色に変更 */
             color: white;
             border: none;
             cursor: pointer;
@@ -56,11 +56,16 @@
             text-align: center;
         }
         button:hover {
-            background-color: #6c757d; /* ボタンの彩度の低い色を強調 */
+            background-color: #5a6268;
         }
         button:disabled {
             background-color: #d3d3d3;
             cursor: not-allowed;
+        }
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .image-preview {
             margin-top: 20px;
@@ -87,8 +92,6 @@
         .warning {
             color: red;
         }
-
-        /* ドラッグアンドドロップエリア */
         #dropArea {
             border: 2px dashed #ccc;
             border-radius: 5px;
@@ -109,8 +112,6 @@
         #fileDropArea.dragging, #extractDropArea.dragging {
             border-color: #4CAF50;
         }
-
-        /* プレビューエリア */
         #textPreview {
             max-width: 100%;
             white-space: pre-wrap;
@@ -121,13 +122,9 @@
             max-height: 200px;
             overflow-y: auto;
         }
-
-        /* canvasは非表示 */
         #canvas {
             display: none;
         }
-
-        /* インジケータ表示 */
         #loadingIndicator, #extractLoadingIndicator {
             display: none;
             margin-top: 10px;
@@ -146,10 +143,8 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* ボタンのデザイン */
         .btn-uniform {
-            background-color: #adb5bd; /* 彩度の低い色 */
+            background-color: #6c757d; /* 彩度の低い色 */
             color: white;
             padding: 10px 20px;
             text-decoration: none;
@@ -157,15 +152,21 @@
             display: inline-block;
         }
         .btn-uniform:hover {
-            background-color: #6c757d; /* ボタンの彩度を低くしたグレー */
+            background-color: #5a6268;
+        }
+        #downloadButton {
+            display: none;
+        }
+        #extractButton {
+            margin-bottom: 20px;
         }
 
-        /* レイアウトの横並び・縦並びの切り替え */
+        /* 横並びと縦並びを制御するCSS */
         .image-row {
             display: flex;
             justify-content: center;
             gap: 20px;
-            flex-wrap: wrap;
+            flex-wrap: wrap; /* 画面が狭い場合に縦並びにする */
         }
         .image-column {
             display: block;
@@ -178,7 +179,7 @@
 
         @media (max-width: 768px) {
             .image-row {
-                flex-direction: column;
+                flex-direction: column; /* 画面が狭い場合は縦並び */
             }
         }
     </style>
@@ -194,7 +195,7 @@
                 <p>または</p>
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
-            <p id="uploadedImageName" class="info">アップロードした画像（元画像）:</p>
+            <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
                 <option value="text">文字を埋め込む</option>
                 <option value="file">ファイルを埋め込む</option>
@@ -221,7 +222,6 @@
 
             <button id="downloadButton" class="btn-uniform" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
-            <!-- 画像を横並びに配置 -->
             <div class="image-row">
                 <div class="image-column">
                     <p class="image-label">アップロードした画像（元画像）:</p>
