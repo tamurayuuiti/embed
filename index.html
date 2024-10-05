@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
+    <title>ステガノグラフィー - 画像や動画に文字やファイルを埋め込む</title>
     <style>
         body {
             font-family: Arial, sans-serif;
@@ -110,7 +110,7 @@
         /* インジケータ用のCSS */
         #loadingIndicator {
             display: none;
-            margin-top: 20px;
+            margin-top: 10px;
             text-align: center;
         }
         .loader {
@@ -133,6 +133,12 @@
         /* データ抽出ボタンとプレビューの間にスペースを追加 */
         #extractButton {
             margin-bottom: 20px;
+        }
+        /* パーセンテージ表示のスタイル */
+        #progressPercentage {
+            margin-top: 5px;
+            font-size: 14px;
+            color: #333;
         }
     </style>
 </head>
@@ -168,6 +174,13 @@
             <p id="embedCapacityInfo" class="info"></p>
 
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
+
+            <!-- インジケータとパーセンテージ表示 -->
+            <div id="loadingIndicator">
+                <div class="loader"></div>
+                <p id="progressPercentage">0%</p>
+            </div>
+
             <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像や動画をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
@@ -180,10 +193,6 @@
                 <img id="outputPreviewImage" src="" alt="埋め込み後の画像や動画プレビュー" />
             </div>
 
-            <div id="loadingIndicator">
-                <div class="loader"></div>
-                <p>埋め込み中...</p>
-            </div>
         </div>
 
         <div class="section">
@@ -194,6 +203,12 @@
                 <input type="file" id="extractImageInput" accept="image/png, image/jpeg, video/mp4">
             </div>
             <p id="extractedFileName" class="info"></p>
+
+            <!-- 抽出用のインジケータとパーセンテージ -->
+            <div id="loadingIndicatorExtract">
+                <div class="loader"></div>
+                <p id="progressPercentageExtract">0%</p>
+            </div>
 
             <button id="extractButton" onclick="extractData()">データを抽出する</button>
 
@@ -216,6 +231,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
 
+        // ファイルの種類と拡張子を検証する関数
         function validateImageFile(file) {
             const validTypes = ['image/png', 'image/jpeg', 'video/mp4'];
             const validExtensions = ['png', 'jpg', 'jpeg', 'mp4'];
@@ -229,10 +245,7 @@
             return true;
         }
 
-        function displayFileSizeWarning(fileSize) {
-            alert(`ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。`);
-        }
-
+        // ファイルサイズのフォーマット表示
         function formatBytes(bytes) {
             if (bytes >= 1048576) {
                 return (bytes / 1048576).toFixed(2) + ' MB';
@@ -251,19 +264,17 @@
             document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
         }
 
-        function checkTextSize() {
-            const text = document.getElementById('textInput').value;
-            const textLength = new TextEncoder().encode(text).length; 
-            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
-            
-            if (textLength > maxDataBytes) {
-                document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
-            } else {
-                document.getElementById('embedTextCount').classList.remove('warning');
-            }
+        // インジケータとパーセンテージを初期化
+        function initializeProgress(percentageElement) {
+            percentageElement.innerText = '0%';
         }
 
+        // 進捗表示を更新
+        function updateProgress(percentageElement, progress) {
+            percentageElement.innerText = `${progress}%`;
+        }
+
+        // 画像アップロード処理
         function handleImageUpload(file) {
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -292,6 +303,7 @@
             reader.readAsDataURL(file);
         }
 
+        // 動画アップロード処理
         function handleVideoUpload(file) {
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -300,15 +312,16 @@
                 document.getElementById('embedPreviewImage').src = video.src;
 
                 const fileSize = formatBytes(file.size);
-                maxDataBytes = file.size; 
+                maxDataBytes = file.size;
                 document.getElementById('embedImageDetails').innerText = 
                     `動画サイズ: ${formatBytes(file.size)}\nファイル形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
 
-                isImageUploaded = true; 
+                isImageUploaded = true;
             };
             reader.readAsDataURL(file);
         }
 
+        // ドラッグ＆ドロップ対応のイベントリスナー
         const dropArea = document.getElementById('dropArea');
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -414,6 +427,7 @@
             }
         }
 
+        // データの埋め込み
         function embedData() {
             const embedOption = document.getElementById('embedOption').value;
             let binaryData;
@@ -426,6 +440,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
+            initializeProgress(document.getElementById('progressPercentage'));
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
@@ -458,38 +473,32 @@
             embedBinaryData(binaryData, dataType, fileExtension); 
         }
 
-        function determineFileType(mimeType) {
-            const textTypes = ['text/plain', 'application/json', 'text/csv'];
-            const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
-            const audioTypes = ['audio/wav'];
-            const videoTypes = ['video/mp4'];
-            const pdfType = ['application/pdf'];
-
-            if (textTypes.includes(mimeType)) return 'text';
-            if (imageTypes.includes(mimeType)) return 'image';
-            if (audioTypes.includes(mimeType)) return 'audio';
-            if (videoTypes.includes(mimeType)) return 'video';
-            if (pdfType.includes(mimeType)) return 'pdf';
-            return 'unknown';
-        }
-
+        // データの埋め込みプロセス
         function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
+            let progress = 0;
+            const totalBits = binaryData.length * 8 + fileExtension.length * 8 + 32 + 8 + 1; 
 
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
+            progress += 1;
+            updateProgress(document.getElementById('progressPercentage'), Math.round((progress / totalBits) * 100));
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 4;
+                progress += 1;
+                updateProgress(document.getElementById('progressPercentage'), Math.round((progress / totalBits) * 100));
             }
 
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
                 pixelIndex += 4;
+                progress += 1;
+                updateProgress(document.getElementById('progressPercentage'), Math.round((progress / totalBits) * 100));
             }
 
             for (let i = 0; i < fileExtension.length; i++) {
@@ -497,6 +506,8 @@
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 4;
+                    progress += 1;
+                    updateProgress(document.getElementById('progressPercentage'), Math.round((progress / totalBits) * 100));
                 }
             }
 
@@ -505,6 +516,8 @@
                 for (let bit of byte) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 4;
+                    progress += 1;
+                    updateProgress(document.getElementById('progressPercentage'), Math.round((progress / totalBits) * 100));
                 }
             }
 
@@ -518,6 +531,7 @@
             document.getElementById('loadingIndicator').style.display = 'none';
         }
 
+        // データ抽出処理
         async function extractData() {
             if (!imgData) {
                 alert("画像や動画をアップロードしてください");
@@ -525,15 +539,24 @@
             }
 
             let pixelIndex = 0;
+            let progress = 0;
+            const totalBits = 32 + 8 + 1;
+
+            document.getElementById('loadingIndicatorExtract').style.display = 'block';
+            initializeProgress(document.getElementById('progressPercentageExtract'));
 
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
+            progress += 1;
+            updateProgress(document.getElementById('progressPercentageExtract'), Math.round((progress / totalBits) * 100));
 
             let binaryLength = '';
             for (let i = 0; i < 32; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 binaryLength += bit;
                 pixelIndex += 4;
+                progress += 1;
+                updateProgress(document.getElementById('progressPercentageExtract'), Math.round((progress / totalBits) * 100));
             }
             const dataLength = parseInt(binaryLength, 2);
 
@@ -542,6 +565,8 @@
                 const bit = imgData.data[pixelIndex] & 1;
                 extLengthBinary += bit;
                 pixelIndex += 4;
+                progress += 1;
+                updateProgress(document.getElementById('progressPercentageExtract'), Math.round((progress / totalBits) * 100));
             }
             const extLength = parseInt(extLengthBinary, 2);
 
@@ -552,6 +577,8 @@
                     const bit = imgData.data[pixelIndex] & 1;
                     charBinary += bit;
                     pixelIndex += 4;
+                    progress += 1;
+                    updateProgress(document.getElementById('progressPercentageExtract'), Math.round((progress / totalBits) * 100));
                 }
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
@@ -611,6 +638,8 @@
 
                 document.getElementById('extractedData').innerText += "\nファイルが抽出されました。";
             }
+
+            document.getElementById('loadingIndicatorExtract').style.display = 'none';
         }
 
         function downloadImage() {
@@ -626,4 +655,3 @@
     </script>
 </body>
 </html>
-
