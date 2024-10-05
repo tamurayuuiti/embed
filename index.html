@@ -155,8 +155,6 @@
         }
         .audio-preview {
             margin-bottom: 20px;  /* 音声データプレビュー部分とボタンの間隔を追加 */
-            max-width: 100%;      /* 音声プレビューの最大幅を指定 */
-            height: auto;         /* 音声プレーヤーが画面サイズに合わせて縮小 */
         }
     </style>
 </head>
@@ -633,7 +631,7 @@
                         extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
                         break;
                     case 'wav':
-                        extractedFilePreview.innerHTML = `<audio controls class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
+                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
                         break;
                     case 'pdf':
                         extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
