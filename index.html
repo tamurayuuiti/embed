@@ -53,9 +53,19 @@
             cursor: pointer;
             margin-right: 10px;
             padding: 10px 20px;
+            text-align: center;
         }
         button:hover {
             background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #d3d3d3;
+            cursor: not-allowed;
+        }
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .image-preview {
             margin-top: 20px;
@@ -68,6 +78,9 @@
             margin-top: 10px;
             padding: 10px;
             background-color: #f1f1f1;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .info {
             font-size: 14px;
@@ -112,18 +125,14 @@
             max-height: 200px;
             overflow-y: auto;
         }
-
-        /* canvas要素を非表示に */
         #canvas {
             display: none;
         }
-
-        /* インジケータ用のCSS */
-        #loadingIndicator {
+        #loadingIndicator, #extractLoadingIndicator {
             display: none;
             margin-top: 10px;
         }
-        .loader {
+        .loader, .extract-loader {
             border: 6px solid #f3f3f3;
             border-radius: 50%;
             border-top: 6px solid #3498db;
@@ -137,34 +146,7 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-
-        /* 抽出用インジケータ */
-        #extractLoadingIndicator {
-            display: none;
-            margin-top: 10px;
-        }
-        .extract-loader {
-            border: 6px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 6px solid #e67e22;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            margin-right: 10px;
-        }
-
-        /* ダウンロードボタンは初期状態では非表示 */
-        #downloadButton {
-            display: none;
-        }
-
-        /* データ抽出ボタンとプレビューの間にスペースを追加 */
-        #extractButton {
-            margin-bottom: 20px;
-        }
-        /* ファイルのダウンロードボタンの改善 */
-        #downloadFileButton {
+        .btn-uniform {
             background-color: #007bff;
             color: white;
             padding: 10px 20px;
@@ -172,8 +154,14 @@
             border-radius: 5px;
             display: inline-block;
         }
-        #downloadFileButton:hover {
+        .btn-uniform:hover {
             background-color: #0056b3;
+        }
+        #downloadButton {
+            display: none;
+        }
+        #extractButton {
+            margin-bottom: 20px;
         }
     </style>
 </head>
@@ -208,21 +196,21 @@
             </div>
             <p id="embedCapacityInfo" class="info"></p>
 
-            <button id="embedButton" onclick="embedData()">データを埋め込む</button>
+            <button id="embedButton" class="btn-uniform" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
 
-            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <button id="downloadButton" class="btn-uniform" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview" style="display:none;">
                 <p>アップロードした画像（元画像）:</p>
-                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
+                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" class="center" />
             </div>
             <div class="image-preview" id="outputImagePreview" style="display:none;">
                 <p>データを埋め込んだ後の画像:</p>
-                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" class="center" />
             </div>
         </div>
 
@@ -235,7 +223,7 @@
             </div>
             <p id="extractedFileName" class="info"></p>
 
-            <button id="extractButton" onclick="extractData()">データを抽出する</button>
+            <button id="extractButton" class="btn-uniform" onclick="extractData()">データを抽出する</button>
             <div id="extractLoadingIndicator">
                 <div class="extract-loader"></div>
             </div>
@@ -245,7 +233,7 @@
             <div id="extractImageDetails" class="details"></div>
             <div class="image-preview" id="extractImagePreview" style="display:none;">
                 <p>アップロードした画像（抽出用）:</p>
-                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" />
+                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="center" />
             </div>
         </div>
 
@@ -401,6 +389,7 @@
             displayFileDetails(file); 
             isFileUploaded = true;
             document.getElementById('fileInput').files = e.dataTransfer.files;
+            resetUI();
         });
 
         const extractDropArea = document.getElementById('extractDropArea');
@@ -442,6 +431,7 @@
             const file = e.target.files[0];
             displayFileDetails(file); 
             isFileUploaded = true;
+            resetUI();
         });
 
         function checkFileSize(fileSize) {
@@ -627,13 +617,13 @@
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
                 
                 extractedFilePreview.innerHTML = `<pre id="textPreview">${extractedText.trim()}</pre>`;
-                document.getElementById('extractedData').innerText = '';
+                document.getElementById('extractedData').innerText = `テキストサイズ: ${formatBytes(binaryData.length)}`;
 
                 const textBlob = new Blob([new Uint8Array(binaryData)], { type: 'text/plain' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(textBlob);
                 link.download = 'extracted_text.txt';
-                link.id = 'downloadFileButton';
+                link.className = 'btn-uniform';
                 link.textContent = 'テキストファイルとしてダウンロード';
                 extractedFilePreview.appendChild(link);
             } else {
@@ -646,10 +636,10 @@
                     case 'jpg':
                     case 'jpeg':
                     case 'gif':
-                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;">`;
+                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
                         break;
                     case 'wav':
-                        extractedFilePreview.innerHTML = `<audio controls><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
+                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
                         break;
                     case 'pdf':
                         extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
@@ -661,7 +651,7 @@
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `extracted_file.${fileExtension}`; 
-                link.id = 'downloadFileButton';
+                link.className = 'btn-uniform';
                 link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
             }
