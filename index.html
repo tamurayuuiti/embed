@@ -52,6 +52,7 @@
             border: none;
             cursor: pointer;
             margin-right: 10px;
+            padding: 10px 20px;
         }
         button:hover {
             background-color: #45a049;
@@ -100,6 +101,16 @@
         }
         #fileDropArea.dragging, #extractDropArea.dragging {
             border-color: #4CAF50;
+        }
+        #textPreview {
+            max-width: 100%;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
         }
 
         /* canvas要素を非表示に */
@@ -152,6 +163,18 @@
         #extractButton {
             margin-bottom: 20px;
         }
+        /* ファイルのダウンロードボタンの改善 */
+        #downloadFileButton {
+            background-color: #007bff;
+            color: white;
+            padding: 10px 20px;
+            text-decoration: none;
+            border-radius: 5px;
+            display: inline-block;
+        }
+        #downloadFileButton:hover {
+            background-color: #0056b3;
+        }
     </style>
 </head>
 <body>
@@ -193,11 +216,11 @@
             <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
-            <div class="image-preview" id="embedImagePreview">
+            <div class="image-preview" id="embedImagePreview" style="display:none;">
                 <p>アップロードした画像（元画像）:</p>
                 <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
             </div>
-            <div class="image-preview" id="outputImagePreview">
+            <div class="image-preview" id="outputImagePreview" style="display:none;">
                 <p>データを埋め込んだ後の画像:</p>
                 <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
             </div>
@@ -220,7 +243,7 @@
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
-            <div class="image-preview" id="extractImagePreview">
+            <div class="image-preview" id="extractImagePreview" style="display:none;">
                 <p>アップロードした画像（抽出用）:</p>
                 <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" />
             </div>
@@ -307,6 +330,7 @@
                     imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
                     document.getElementById('embedPreviewImage').src = event.target.result;
+                    document.getElementById('embedImagePreview').style.display = 'block';
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
@@ -323,7 +347,6 @@
         }
 
         function handleExtractImageUpload(file) {
-            resetUI(); // データをリセット
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
@@ -336,6 +359,7 @@
                     imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
                     document.getElementById('extractPreviewImage').src = event.target.result;
+                    document.getElementById('extractImagePreview').style.display = 'block';
                 };
                 img.src = event.target.result;
             };
@@ -536,6 +560,7 @@
 
             const dataUrl = canvas.toDataURL();
             document.getElementById('outputPreviewImage').src = dataUrl;
+            document.getElementById('outputImagePreview').style.display = 'block';
 
             document.getElementById('downloadButton').style.display = 'block';
             document.getElementById('loadingIndicator').style.display = 'none';
@@ -601,19 +626,20 @@
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
                 
-                extractedFilePreview.innerHTML = `<pre>${extractedText.trim()}</pre>`;
+                extractedFilePreview.innerHTML = `<pre id="textPreview">${extractedText.trim()}</pre>`;
                 document.getElementById('extractedData').innerText = '';
 
                 const textBlob = new Blob([new Uint8Array(binaryData)], { type: 'text/plain' });
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(textBlob);
                 link.download = 'extracted_text.txt';
+                link.id = 'downloadFileButton';
                 link.textContent = 'テキストファイルとしてダウンロード';
                 extractedFilePreview.appendChild(link);
             } else {
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}`;
+                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
 
                 switch (fileExtension) {
                     case 'png':
@@ -635,10 +661,9 @@
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
                 link.download = `extracted_file.${fileExtension}`; 
-                link.textContent = `ダウンロード`;
+                link.id = 'downloadFileButton';
+                link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
-
-                document.getElementById('extractedData').innerText += "\nファイルが抽出されました。";
             }
 
             document.getElementById('extractLoadingIndicator').style.display = 'none';
