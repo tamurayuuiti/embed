@@ -91,7 +91,6 @@
         #dropArea.dragging {
             border-color: #4CAF50;
         }
-        /* ドラックアンドドロップエリアの枠を小さくする */
         #fileDropArea, #extractDropArea {
             border: 2px dashed #ccc;
             border-radius: 5px;
@@ -161,10 +160,11 @@
                 <div id="fileDropArea">
                     <p>ここにファイルをドラッグ＆ドロップしてください</p>
                     <p>または</p>
-                    <input type="file" id="fileInput" accept=".txt,.pdf,.mp3,.mp4,.docx,.xlsx,.zip,.png,.jpg,.jpeg,.gif,.csv,.json,.wav,.ogg">
+                    <!-- 対応するファイル形式を制限 -->
+                    <input type="file" id="fileInput" accept=".txt,.json,.csv,.png,.jpg,.jpeg,.gif,.pdf,.wav">
                 </div>
                 <p id="uploadedFileName" class="info"></p>
-                <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .pdf, .mp3, .mp4, .docx, .xlsx, .zip, .png, .jpg, .jpeg, .gif, .csv, .json, .wav, .ogg</p>
+                <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
 
@@ -249,6 +249,15 @@
             } else {
                 return bytes + ' バイト';
             }
+        }
+
+        // ファイルの詳細情報を表示
+        function displayFileDetails(file) {
+            const fileSize = formatBytes(file.size);
+            const fileName = file.name;
+            const fileType = file.type || '不明';
+
+            document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
         }
 
         // テキストの長さをチェックし、警告を表示する関数
@@ -354,7 +363,7 @@
             e.preventDefault();
             fileDropArea.classList.remove('dragging');
             const file = e.dataTransfer.files[0];
-            document.getElementById('uploadedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+            displayFileDetails(file); // アップロードされたファイルの詳細を表示
             isFileUploaded = true;
             // ファイル名を手動選択部分にも反映
             document.getElementById('fileInput').files = e.dataTransfer.files;
@@ -399,7 +408,7 @@
 
         document.getElementById('fileInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
-            document.getElementById('uploadedFileName').innerText = `アップロードしたファイル: ${file.name}`;
+            displayFileDetails(file); // アップロードされたファイルの詳細を表示
             isFileUploaded = true; // ファイルがアップロードされたことを設定
         });
 
@@ -475,14 +484,12 @@
         function determineFileType(mimeType) {
             const textTypes = ['text/plain', 'application/json', 'text/csv'];
             const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
-            const audioTypes = ['audio/mp3', 'audio/wav', 'audio/ogg'];
-            const videoTypes = ['video/mp4'];
+            const audioTypes = ['audio/wav'];
             const pdfType = ['application/pdf'];
 
             if (textTypes.includes(mimeType)) return 'text';
             if (imageTypes.includes(mimeType)) return 'image';
             if (audioTypes.includes(mimeType)) return 'audio';
-            if (videoTypes.includes(mimeType)) return 'video';
             if (pdfType.includes(mimeType)) return 'pdf';
             return 'unknown';
         }
@@ -624,13 +631,8 @@
                     case 'gif':
                         extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;">`;
                         break;
-                    case 'mp3':
                     case 'wav':
-                    case 'ogg':
-                        extractedFilePreview.innerHTML = `<audio controls><source src="${URL.createObjectURL(blob)}" type="audio/${fileExtension}">音声プレビュー非対応</audio>`;
-                        break;
-                    case 'mp4':
-                        extractedFilePreview.innerHTML = `<video controls width="100%"><source src="${URL.createObjectURL(blob)}" type="video/mp4">動画プレビュー非対応</video>`;
+                        extractedFilePreview.innerHTML = `<audio controls><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
                         break;
                     case 'pdf':
                         extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
