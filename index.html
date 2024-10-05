@@ -47,7 +47,7 @@
             resize: vertical;
         }
         button {
-            background-color: #4CAF50;
+            background-color: #4CAF50;  /* 緑色に戻す */
             color: white;
             border: none;
             cursor: pointer;
@@ -73,6 +73,7 @@
         }
         .image-preview img {
             max-width: 100%;
+            max-height: 400px;  /* プレビュー画像の最大表示領域を指定 */
             height: auto;
             border: 1px solid #ccc;
             margin-top: 10px;
@@ -146,22 +147,14 @@
             0% { transform: rotate(0deg); }
             100% { transform: rotate(360deg); }
         }
-        .btn-uniform {
-            background-color: #007bff;
-            color: white;
-            padding: 10px 20px;
-            text-decoration: none;
-            border-radius: 5px;
-            display: inline-block;
-        }
-        .btn-uniform:hover {
-            background-color: #0056b3;
-        }
         #downloadButton {
             display: none;
         }
         #extractButton {
             margin-bottom: 20px;
+        }
+        .audio-preview {
+            margin-bottom: 20px;  /* 音声データプレビュー部分とボタンの間隔を追加 */
         }
     </style>
 </head>
@@ -196,21 +189,21 @@
             </div>
             <p id="embedCapacityInfo" class="info"></p>
 
-            <button id="embedButton" class="btn-uniform" onclick="embedData()">データを埋め込む</button>
+            <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
 
-            <button id="downloadButton" class="btn-uniform" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview" id="embedImagePreview" style="display:none;">
                 <p>アップロードした画像（元画像）:</p>
-                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" class="center" />
+                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
             </div>
             <div class="image-preview" id="outputImagePreview" style="display:none;">
                 <p>データを埋め込んだ後の画像:</p>
-                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" class="center" />
+                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
             </div>
         </div>
 
@@ -223,7 +216,7 @@
             </div>
             <p id="extractedFileName" class="info"></p>
 
-            <button id="extractButton" class="btn-uniform" onclick="extractData()">データを抽出する</button>
+            <button id="extractButton" onclick="extractData()">データを抽出する</button>
             <div id="extractLoadingIndicator">
                 <div class="extract-loader"></div>
             </div>
@@ -233,7 +226,7 @@
             <div id="extractImageDetails" class="details"></div>
             <div class="image-preview" id="extractImagePreview" style="display:none;">
                 <p>アップロードした画像（抽出用）:</p>
-                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="center" />
+                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" />
             </div>
         </div>
 
@@ -247,7 +240,6 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
 
-        // データをリセットする関数
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
             document.getElementById('downloadButton').style.display = 'none';
@@ -639,7 +631,7 @@
                         extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
                         break;
                     case 'wav':
-                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
+                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
                         break;
                     case 'pdf':
                         extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
