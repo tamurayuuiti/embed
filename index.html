@@ -456,7 +456,7 @@
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); // ファイルをバイナリデータに変換
                     dataType = determineFileType(file.type); // ファイルタイプを取得
-                    fileExtension = file.name.split('.').pop(); // ファイルの拡張子を取得
+                    fileExtension = file.name.split('.').pop(); // ファイルの拡張子を保存
                     embedBinaryData(binaryData, dataType, fileExtension); // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
@@ -498,6 +498,22 @@
                 pixelIndex += 4;
             }
 
+            // 拡張子の長さ（8ビット）を埋め込む
+            const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
+            for (let i = 0; i < extLengthBinary.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
+                pixelIndex += 4;
+            }
+
+            // 拡張子の内容を埋め込む
+            for (let i = 0; i < fileExtension.length; i++) {
+                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
+
             // データ本体を埋め込む
             for (let i = 0; i < binaryData.length; i++) {
                 const byte = binaryData[i].toString(2).padStart(8, '0');
@@ -519,7 +535,7 @@
             document.getElementById('loadingIndicator').style.display = 'none'; // インジケータを非表示
         }
 
-        // 画像からデータを抽出し、ファイル名を含めずに復元
+        // 画像からデータを抽出し、ファイルの拡張子を復元
         async function extractData() {
             if (!imgData) {
                 alert("画像をアップロードしてください");
@@ -540,6 +556,27 @@
                 pixelIndex += 4;
             }
             const dataLength = parseInt(binaryLength, 2);
+
+            // 拡張子の長さを取得（8ビット）
+            let extLengthBinary = '';
+            for (let i = 0; i < 8; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                extLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const extLength = parseInt(extLengthBinary, 2);
+
+            // 拡張子を取得
+            let fileExtension = '';
+            for (let i = 0; i < extLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
+            }
 
             // データを取得（非同期処理で分割し、負荷を軽減）
             let binaryData = [];
@@ -571,12 +608,10 @@
                 // ファイルデータとして扱う
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                // ファイルの種類ごとにプレビューを生成
-                extractedFilePreview.innerHTML = "プレビューできません（ファイルデータ）";
-
+                // ダウンロードリンク作成
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'extracted_file';  // ファイル名は指定せず固定
+                link.download = `extracted_file.${fileExtension}`; // ファイル名に拡張子を追加
                 link.textContent = `ダウンロード`;
                 extractedFilePreview.appendChild(link);
 
