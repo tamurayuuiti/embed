@@ -47,7 +47,7 @@
             resize: vertical;
         }
         button {
-            background-color: #6c757d; /* 彩度の低い色に変更 */
+            background-color: #4CAF50;
             color: white;
             border: none;
             cursor: pointer;
@@ -56,7 +56,7 @@
             text-align: center;
         }
         button:hover {
-            background-color: #5a6268;
+            background-color: #45a049;
         }
         button:disabled {
             background-color: #d3d3d3;
@@ -78,6 +78,9 @@
             margin-top: 10px;
             padding: 10px;
             background-color: #f1f1f1;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
         }
         .info {
             font-size: 14px;
@@ -144,7 +147,7 @@
             100% { transform: rotate(360deg); }
         }
         .btn-uniform {
-            background-color: #6c757d; /* 彩度の低い色 */
+            background-color: #007bff;
             color: white;
             padding: 10px 20px;
             text-decoration: none;
@@ -152,35 +155,13 @@
             display: inline-block;
         }
         .btn-uniform:hover {
-            background-color: #5a6268;
+            background-color: #0056b3;
         }
         #downloadButton {
             display: none;
         }
         #extractButton {
             margin-bottom: 20px;
-        }
-
-        /* 横並びと縦並びを制御するCSS */
-        .image-row {
-            display: flex;
-            justify-content: center;
-            gap: 20px;
-            flex-wrap: wrap; /* 画面が狭い場合に縦並びにする */
-        }
-        .image-column {
-            display: block;
-            text-align: center;
-        }
-        .image-label {
-            margin-bottom: 10px;
-            font-weight: bold;
-        }
-
-        @media (max-width: 768px) {
-            .image-row {
-                flex-direction: column; /* 画面が狭い場合は縦並び */
-            }
         }
     </style>
 </head>
@@ -222,19 +203,14 @@
 
             <button id="downloadButton" class="btn-uniform" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
-            <div class="image-row">
-                <div class="image-column">
-                    <p class="image-label">アップロードした画像（元画像）:</p>
-                    <div class="image-preview">
-                        <img id="embedPreviewImage" src="" alt="元画像のプレビュー" class="center" />
-                    </div>
-                </div>
-                <div class="image-column">
-                    <p class="image-label">データを埋め込んだ後の画像:</p>
-                    <div class="image-preview">
-                        <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" class="center" />
-                    </div>
-                </div>
+            <div id="embedImageDetails" class="details"></div>
+            <div class="image-preview" id="embedImagePreview" style="display:none;">
+                <p>アップロードした画像（元画像）:</p>
+                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" class="center" />
+            </div>
+            <div class="image-preview" id="outputImagePreview" style="display:none;">
+                <p>データを埋め込んだ後の画像:</p>
+                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" class="center" />
             </div>
         </div>
 
@@ -271,6 +247,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
 
+        // データをリセットする関数
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
             document.getElementById('downloadButton').style.display = 'none';
@@ -328,7 +305,7 @@
         }
 
         function handleImageUpload(file) {
-            resetUI(); 
+            resetUI(); // データをリセット
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
@@ -341,6 +318,7 @@
                     imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
                     document.getElementById('embedPreviewImage').src = event.target.result;
+                    document.getElementById('embedImagePreview').style.display = 'block';
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
