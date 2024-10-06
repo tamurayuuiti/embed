@@ -5,177 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            max-width: 85%;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        .section {
-            margin-bottom: 40px;
-        }
-        .section h3 {
-            color: #444;
-            margin-bottom: 10px;
-        }
-        .section p {
-            margin: 5px 0;
-            color: #666;
-        }
-        input[type="file"], input[type="text"], textarea, button, select {
-            margin-top: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        textarea {
-            width: calc(100% - 22px);
-            height: 80px;
-            resize: vertical;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-            padding: 10px 20px;
-            text-align: center;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #d3d3d3;
-            cursor: not-allowed;
-        }
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .image-preview {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .image-preview img {
-            max-width: 100%;
-            max-height: 400px;
-            height: auto;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f1f1f1;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            box-sizing: border-box;
-        }
-        .image-preview-container {
-            display: flex;
-            flex-direction: column;
-        }
-        @media (min-width: 768px) {
-            .image-preview-container {
-                flex-direction: row;
-                justify-content: space-around;
-            }
-            .image-preview {
-                width: 48%;
-            }
-        }
-        .info {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .details {
-            font-size: 14px;
-            margin-top: 10px;
-            color: #333;
-        }
-        .warning {
-            color: red;
-        }
-        #dropArea {
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-        }
-        #dropArea.dragging {
-            border-color: #4CAF50;
-        }
-        #fileDropArea, #extractDropArea {
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-        #fileDropArea.dragging, #extractDropArea.dragging {
-            border-color: #4CAF50;
-        }
-        #textPreview {
-            max-width: 100%;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ccc;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        #canvas {
-            display: none;
-        }
-        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator {
-            display: none;
-            margin-top: 10px;
-        }
-        .loader, .extract-loader, .upload-loader {
-            border: 6px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 6px solid #3498db;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            margin-right: 10px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        #downloadButton {
-            display: none;
-        }
-        #extractButton {
-            margin-bottom: 20px;
-        }
-        .audio-preview {
-            margin-bottom: 20px;
-        }
-        /* 中心に戻すためのスタイル */
-        .image-preview-center {
-            display: block;
-            margin: 0 auto;
-            text-align: center;
-        }
-        #extractImagePreview {
-            max-width: 100%;
-            display: block;
-            margin: 0 auto;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        .container { max-width: 85%; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; }
+        .section { margin-bottom: 40px; }
+        .section h3 { color: #444; margin-bottom: 10px; }
+        .section p { margin: 5px 0; color: #666; }
+        input[type="file"], input[type="text"], textarea, button, select { margin-top: 10px; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #d3d3d3; cursor: not-allowed; }
+        .center { display: block; margin-left: auto; margin-right: auto; }
+        .image-preview { margin-top: 20px; text-align: center; }
+        .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        .image-preview-container { display: flex; flex-direction: column; }
+        @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
+        .info { font-size: 14px; color: #666; margin-top: 5px; }
+        .details { font-size: 14px; margin-top: 10px; color: #333; }
+        .warning { color: red; }
+        #dropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
+        #dropArea.dragging { border-color: #4CAF50; }
+        #fileDropArea, #extractDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; }
+        #fileDropArea.dragging, #extractDropArea.dragging { border-color: #4CAF50; }
+        #textPreview { max-width: 100%; white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
+        #canvas { display: none; }
+        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
+        .loader, .extract-loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #downloadButton { display: none; }
+        #extractButton { margin-bottom: 20px; }
+        .audio-preview { margin-bottom: 20px; }
+        .image-preview-center { display: block; margin: 0 auto; text-align: center; }
+        #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -262,6 +123,8 @@
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
+        let embeddedFileName = '';  // ファイル名を保存する変数
+        let embeddedFileExtension = '';  // 拡張子を保存する変数
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -337,7 +200,7 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8); 
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024;  // 1KB引く
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -475,6 +338,7 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
+            let fileName = '';
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
@@ -498,20 +362,61 @@
 
                 const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
+                fileName = file.name;
+                embeddedFileName = fileName.split('.').slice(0, -1).join('.');  // 拡張子を除いたファイル名
+                embeddedFileExtension = file.name.split('.').pop();  // 拡張子を取得
                 if (!checkFileSize(fileSize)) return;
 
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
-                    fileExtension = file.name.split('.').pop(); 
-                    embedBinaryData(binaryData, dataType, fileExtension); 
+                    embedFileNameAndExtension(embeddedFileName, embeddedFileExtension);  // まずファイル名と拡張子を埋め込む
+                    embedBinaryData(binaryData, dataType);  // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension); 
+            embedBinaryData(binaryData, dataType);  // ファイル名に関係ないデータ埋め込み
+        }
+
+        function embedFileNameAndExtension(fileName, fileExtension) {
+            let pixelIndex = 0;
+
+            const fileNameIdentifier = "FILENAME:";  // ファイル名識別子
+            for (let i = 0; i < fileNameIdentifier.length; i++) {
+                const charBinary = fileNameIdentifier[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
+
+            for (let i = 0; i < fileName.length; i++) {
+                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
+
+            const extensionIdentifier = "EXT:";  // 拡張子識別子
+            for (let i = 0; i < extensionIdentifier.length; i++) {
+                const charBinary = extensionIdentifier[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
+
+            for (let i = 0; i < fileExtension.length; i++) {
+                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
         }
 
         function determineFileType(mimeType) {
@@ -527,8 +432,8 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType, fileExtension) {
-            let pixelIndex = 0;
+        function embedBinaryData(binaryData, dataType) {
+            let pixelIndex = 128;  // ファイル名と拡張子を埋め込んだ後のデータ開始位置に移動
 
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
@@ -538,20 +443,6 @@
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 4;
-            }
-
-            const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
-            for (let i = 0; i < extLengthBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
-                pixelIndex += 4;
-            }
-
-            for (let i = 0; i < fileExtension.length; i++) {
-                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
             }
 
             for (let i = 0; i < binaryData.length; i++) {
@@ -583,6 +474,71 @@
 
             let pixelIndex = 0;
 
+            let identifier = '';
+            for (let i = 0; i < 9; i++) {  // "FILENAME:" の長さは9
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                identifier += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            if (identifier !== 'FILENAME:') {
+                alert("ファイル名が見つかりませんでした。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
+            }
+
+            let fileName = '';
+            while (true) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                const charCode = parseInt(charBinary, 2);
+                if (charCode === 0) break;  // 終端文字が見つかるまで読み取る
+                fileName += String.fromCharCode(charCode);
+            }
+
+            let extensionIdentifier = '';
+            for (let i = 0; i < 4; i++) {  // "EXT:" の長さは4
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                extensionIdentifier += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            if (extensionIdentifier !== 'EXT:') {
+                alert("拡張子が見つかりませんでした。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
+            }
+
+            let fileExtension = '';
+            while (true) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                const charCode = parseInt(charBinary, 2);
+                if (charCode === 0) break;
+                fileExtension += String.fromCharCode(charCode);
+            }
+
+            embeddedFileName = fileName;  // 復元したファイル名を保存
+            embeddedFileExtension = fileExtension;  // 復元した拡張子を保存
+
+            pixelIndex = 128;  // ファイル名と拡張子を読み取った後の位置に移動
+
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
 
@@ -593,25 +549,6 @@
                 pixelIndex += 4;
             }
             const dataLength = parseInt(binaryLength, 2);
-
-            let extLengthBinary = '';
-            for (let i = 0; i < 8; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                extLengthBinary += bit;
-                pixelIndex += 4;
-            }
-            const extLength = parseInt(extLengthBinary, 2);
-
-            let fileExtension = '';
-            for (let i = 0; i < extLength; i++) {
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
-            }
 
             let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
@@ -652,9 +589,9 @@
             } else {
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
+                document.getElementById('extractedData').innerText = `ファイル名: ${embeddedFileName}\nファイル形式: ${embeddedFileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
 
-                switch (fileExtension) {
+                switch (embeddedFileExtension) {
                     case 'png':
                     case 'jpg':
                     case 'jpeg':
@@ -673,7 +610,7 @@
 
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `extracted_file.${fileExtension}`; 
+                link.download = `${embeddedFileName}.${embeddedFileExtension}`;  // 埋め込んだファイル名と拡張子を使用してダウンロード
                 link.className = 'btn-uniform';
                 link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
