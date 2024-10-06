@@ -10,11 +10,6 @@
             margin: 20px;
             background-color: #f9f9f9;
         }
-        h1 {
-            color: #333;
-            text-align: center;
-            margin-bottom: 40px;
-        }
         .container {
             max-width: 85%; /* 大枠を少し大きく */
             margin: 0 auto;
@@ -84,6 +79,20 @@
             margin-right: auto;
             box-sizing: border-box;
         }
+        /* 横並びにするためのスタイル */
+        .image-preview-container {
+            display: flex;
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            .image-preview-container {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            .image-preview {
+                width: 48%; /* 横並びの際の画像の幅 */
+            }
+        }
         .info {
             font-size: 14px;
             color: #666;
@@ -130,11 +139,11 @@
         #canvas {
             display: none;
         }
-        #loadingIndicator, #extractLoadingIndicator {
+        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator {
             display: none;
             margin-top: 10px;
         }
-        .loader, .extract-loader {
+        .loader, .extract-loader, .upload-loader {
             border: 6px solid #f3f3f3;
             border-radius: 50%;
             border-top: 6px solid #3498db;
@@ -160,8 +169,6 @@
     </style>
 </head>
 <body>
-    <h1>画像に文字やファイルを埋め込む</h1>
-
     <div class="container">
         <div class="section">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
@@ -169,6 +176,9 @@
                 <p>ここに画像をドラッグ＆ドロップしてください</p>
                 <p>または</p>
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
+            </div>
+            <div id="uploadIndicator">
+                <div class="upload-loader"></div>画像アップロード中...
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
@@ -192,19 +202,21 @@
 
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
-                <div class="loader"></div>
+                <div class="loader"></div>埋め込み中...
             </div>
 
             <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
-            <div class="image-preview" id="embedImagePreview" style="display:none;">
-                <p>アップロードした画像（元画像）:</p>
-                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
-            </div>
-            <div class="image-preview" id="outputImagePreview" style="display:none;">
-                <p>データを埋め込んだ後の画像:</p>
-                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+            <div class="image-preview-container">
+                <div class="image-preview" id="embedImagePreview" style="display:none;">
+                    <p>アップロードした画像（元画像）:</p>
+                    <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
+                </div>
+                <div class="image-preview" id="outputImagePreview" style="display:none;">
+                    <p>データを埋め込んだ後の画像:</p>
+                    <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+                </div>
             </div>
         </div>
 
@@ -214,6 +226,9 @@
                 <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
                 <p>または</p>
                 <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            </div>
+            <div id="extractLoadingIndicator">
+                <div class="extract-loader"></div>抽出用画像アップロード中...
             </div>
             <p id="extractedFileName" class="info"></p>
 
@@ -299,10 +314,12 @@
 
         function handleImageUpload(file) {
             resetUI();
+            document.getElementById('uploadIndicator').style.display = 'block';
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
+                    document.getElementById('uploadIndicator').style.display = 'none'; // アップロード完了後に非表示
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
                     canvas.width = img.width;
@@ -328,10 +345,12 @@
         }
 
         function handleExtractImageUpload(file) {
+            document.getElementById('extractLoadingIndicator').style.display = 'block';
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
+                    document.getElementById('extractLoadingIndicator').style.display = 'none'; // アップロード完了後に非表示
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
                     canvas.width = img.width;
