@@ -11,7 +11,7 @@
             background-color: #f9f9f9;
         }
         .container {
-            max-width: 85%; /* 大枠を少し大きく */
+            max-width: 85%;
             margin: 0 auto;
             background-color: #fff;
             padding: 20px;
@@ -68,7 +68,7 @@
         }
         .image-preview img {
             max-width: 100%;
-            max-height: 400px; 
+            max-height: 400px;
             height: auto;
             border: 1px solid #ccc;
             margin-top: 10px;
@@ -79,11 +79,19 @@
             margin-right: auto;
             box-sizing: border-box;
         }
-        /* 抽出用画像のプレビューを常に中央に表示 */
-        .centered-preview {
-            display: block;
-            margin: 20px auto;
-            text-align: center;
+        /* 横並びにするためのスタイル */
+        .image-preview-container {
+            display: flex;
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            .image-preview-container {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            .image-preview {
+                width: 48%;
+            }
         }
         .info {
             font-size: 14px;
@@ -156,7 +164,12 @@
             margin-bottom: 20px;
         }
         .audio-preview {
-            margin-bottom: 20px; /* プレビューとボタン間に間隔 */
+            margin-bottom: 20px;
+        }
+        /* 中心に戻すためのスタイル */
+        .image-preview-center {
+            display: block;
+            margin: 0 auto;
         }
     </style>
 </head>
@@ -200,13 +213,15 @@
             <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
-            <div class="image-preview" id="embedImagePreview" style="display:none;">
-                <p>アップロードした画像（元画像）:</p>
-                <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
-            </div>
-            <div class="image-preview" id="outputImagePreview" style="display:none;">
-                <p>データを埋め込んだ後の画像:</p>
-                <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+            <div class="image-preview-container">
+                <div class="image-preview" id="embedImagePreview" style="display:none;">
+                    <p>アップロードした画像（元画像）:</p>
+                    <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
+                </div>
+                <div class="image-preview" id="outputImagePreview" style="display:none;">
+                    <p>データを埋め込んだ後の画像:</p>
+                    <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+                </div>
             </div>
         </div>
 
@@ -230,9 +245,9 @@
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
             <div id="extractImageDetails" class="details"></div>
-            <div class="centered-preview" id="extractImagePreview" style="display:none;">
+            <div class="image-preview" id="extractImagePreview" style="display:none;">
                 <p>アップロードした画像（抽出用）:</p>
-                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" />
+                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="image-preview-center" />
             </div>
         </div>
 
@@ -304,12 +319,10 @@
 
         function handleImageUpload(file) {
             resetUI();
-            document.getElementById('uploadIndicator').style.display = 'block';
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    document.getElementById('uploadIndicator').style.display = 'none'; // アップロード完了後に非表示
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
                     canvas.width = img.width;
@@ -335,12 +348,10 @@
         }
 
         function handleExtractImageUpload(file) {
-            document.getElementById('extractLoadingIndicator').style.display = 'block';
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
                 img.onload = function() {
-                    document.getElementById('extractLoadingIndicator').style.display = 'none'; // アップロード完了後に非表示
                     const canvas = document.getElementById('canvas');
                     const ctx = canvas.getContext('2d', { willReadFrequently: true });
                     canvas.width = img.width;
