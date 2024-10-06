@@ -5,177 +5,38 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
     <style>
-        body {
-            font-family: Arial, sans-serif;
-            margin: 20px;
-            background-color: #f9f9f9;
-        }
-        .container {
-            max-width: 85%;
-            margin: 0 auto;
-            background-color: #fff;
-            padding: 20px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-            border-radius: 8px;
-        }
-        .section {
-            margin-bottom: 40px;
-        }
-        .section h3 {
-            color: #444;
-            margin-bottom: 10px;
-        }
-        .section p {
-            margin: 5px 0;
-            color: #666;
-        }
-        input[type="file"], input[type="text"], textarea, button, select {
-            margin-top: 10px;
-            padding: 10px;
-            font-size: 16px;
-            border-radius: 5px;
-            border: 1px solid #ccc;
-        }
-        textarea {
-            width: calc(100% - 22px);
-            height: 80px;
-            resize: vertical;
-        }
-        button {
-            background-color: #4CAF50;
-            color: white;
-            border: none;
-            cursor: pointer;
-            margin-right: 10px;
-            padding: 10px 20px;
-            text-align: center;
-        }
-        button:hover {
-            background-color: #45a049;
-        }
-        button:disabled {
-            background-color: #d3d3d3;
-            cursor: not-allowed;
-        }
-        .center {
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-        }
-        .image-preview {
-            margin-top: 20px;
-            text-align: center;
-        }
-        .image-preview img {
-            max-width: 100%;
-            max-height: 400px;
-            height: auto;
-            border: 1px solid #ccc;
-            margin-top: 10px;
-            padding: 10px;
-            background-color: #f1f1f1;
-            display: block;
-            margin-left: auto;
-            margin-right: auto;
-            box-sizing: border-box;
-        }
-        .image-preview-container {
-            display: flex;
-            flex-direction: column;
-        }
-        @media (min-width: 768px) {
-            .image-preview-container {
-                flex-direction: row;
-                justify-content: space-around;
-            }
-            .image-preview {
-                width: 48%;
-            }
-        }
-        .info {
-            font-size: 14px;
-            color: #666;
-            margin-top: 5px;
-        }
-        .details {
-            font-size: 14px;
-            margin-top: 10px;
-            color: #333;
-        }
-        .warning {
-            color: red;
-        }
-        #dropArea {
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            padding: 20px;
-            text-align: center;
-            cursor: pointer;
-        }
-        #dropArea.dragging {
-            border-color: #4CAF50;
-        }
-        #fileDropArea, #extractDropArea {
-            border: 2px dashed #ccc;
-            border-radius: 5px;
-            padding: 10px;
-            text-align: center;
-            cursor: pointer;
-        }
-        #fileDropArea.dragging, #extractDropArea.dragging {
-            border-color: #4CAF50;
-        }
-        #textPreview {
-            max-width: 100%;
-            white-space: pre-wrap;
-            word-wrap: break-word;
-            background-color: #f9f9f9;
-            padding: 10px;
-            border: 1px solid #ccc;
-            max-height: 200px;
-            overflow-y: auto;
-        }
-        #canvas {
-            display: none;
-        }
-        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator {
-            display: none;
-            margin-top: 10px;
-        }
-        .loader, .extract-loader, .upload-loader {
-            border: 6px solid #f3f3f3;
-            border-radius: 50%;
-            border-top: 6px solid #3498db;
-            width: 40px;
-            height: 40px;
-            animation: spin 2s linear infinite;
-            display: inline-block;
-            margin-right: 10px;
-        }
-        @keyframes spin {
-            0% { transform: rotate(0deg); }
-            100% { transform: rotate(360deg); }
-        }
-        #downloadButton {
-            display: none;
-        }
-        #extractButton {
-            margin-bottom: 20px;
-        }
-        .audio-preview {
-            margin-bottom: 20px;
-        }
-        /* 中心に戻すためのスタイル */
-        .image-preview-center {
-            display: block;
-            margin: 0 auto;
-            text-align: center;
-        }
-        #extractImagePreview {
-            max-width: 100%;
-            display: block;
-            margin: 0 auto;
-        }
+        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
+        .container { max-width: 85%; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; }
+        .section { margin-bottom: 40px; }
+        .section h3 { color: #444; margin-bottom: 10px; }
+        .section p { margin: 5px 0; color: #666; }
+        input[type="file"], input[type="text"], textarea, button, select { margin-top: 10px; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
+        textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #d3d3d3; cursor: not-allowed; }
+        .center { display: block; margin-left: auto; margin-right: auto; }
+        .image-preview { margin-top: 20px; text-align: center; }
+        .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        .image-preview-container { display: flex; flex-direction: column; }
+        @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
+        .info { font-size: 14px; color: #666; margin-top: 5px; }
+        .details { font-size: 14px; margin-top: 10px; color: #333; }
+        .warning { color: red; }
+        #dropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
+        #dropArea.dragging { border-color: #4CAF50; }
+        #fileDropArea, #extractDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; }
+        #fileDropArea.dragging, #extractDropArea.dragging { border-color: #4CAF50; }
+        #textPreview { max-width: 100%; white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
+        #canvas { display: none; }
+        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
+        .loader, .extract-loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #downloadButton { display: none; }
+        #extractButton { margin-bottom: 20px; }
+        .audio-preview { margin-bottom: 20px; }
+        .image-preview-center { display: block; margin: 0 auto; text-align: center; }
+        #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
     </style>
 </head>
 <body>
@@ -262,6 +123,7 @@
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
+        let embeddedFileName = '';  // ファイル名を保存する変数
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -500,6 +362,7 @@
                 const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
                 fileName = file.name;
+                embeddedFileName = fileName;  // ファイル名を埋め込むため保存
                 if (!checkFileSize(fileSize)) return;
 
                 const reader = new FileReader();
@@ -507,13 +370,32 @@
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
-                    embedBinaryData(binaryData, dataType, fileExtension, fileName);  // ファイル名も埋め込む
+                    embedFileName(fileName);  // まずファイル名を埋め込む
+                    embedBinaryData(binaryData, dataType, fileExtension);  // ファイルデータを埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension, fileName);  // ファイル名も埋め込む
+            embedBinaryData(binaryData, dataType, fileExtension);  // ファイル名に関係ないデータ埋め込み
+        }
+
+        function embedFileName(fileName) {
+            let pixelIndex = 0;
+
+            const fileNameLengthBinary = fileName.length.toString(2).padStart(16, '0');
+            for (let i = 0; i < fileNameLengthBinary.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameLengthBinary[i]);
+                pixelIndex += 4;
+            }
+
+            for (let i = 0; i < fileName.length; i++) {
+                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
+            }
         }
 
         function determineFileType(mimeType) {
@@ -529,8 +411,8 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
-            let pixelIndex = 0;
+        function embedBinaryData(binaryData, dataType, fileExtension) {
+            let pixelIndex = 128;  // ファイル名を埋め込んだ後のデータ開始位置に移動
 
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
@@ -550,20 +432,6 @@
 
             for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
-            }
-
-            const fileNameBinaryLength = fileName.length.toString(2).padStart(16, '0');
-            for (let i = 0; i < fileNameBinaryLength.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameBinaryLength[i]);
-                pixelIndex += 4;
-            }
-
-            for (let i = 0; i < fileName.length; i++) {
-                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 4;
@@ -599,6 +467,29 @@
 
             let pixelIndex = 0;
 
+            let fileNameLengthBinary = '';
+            for (let i = 0; i < 16; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                fileNameLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const fileNameLength = parseInt(fileNameLengthBinary, 2);
+
+            let fileName = '';
+            for (let i = 0; i < fileNameLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                fileName += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            embeddedFileName = fileName;  // 復元したファイル名を保存
+
+            pixelIndex = 128;  // ファイル名を読み取った後の位置に移動
+
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
 
@@ -627,25 +518,6 @@
                     pixelIndex += 4;
                 }
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
-            }
-
-            let fileNameLengthBinary = '';
-            for (let i = 0; i < 16; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                fileNameLengthBinary += bit;
-                pixelIndex += 4;
-            }
-            const fileNameLength = parseInt(fileNameLengthBinary, 2);
-
-            let fileName = '';
-            for (let i = 0; i < fileNameLength; i++) {
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                fileName += String.fromCharCode(parseInt(charBinary, 2));
             }
 
             let binaryData = [];
@@ -687,7 +559,7 @@
             } else {
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                document.getElementById('extractedData').innerText = `ファイル名: ${fileName}\nファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
+                document.getElementById('extractedData').innerText = `ファイル名: ${embeddedFileName}\nファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
 
                 switch (fileExtension) {
                     case 'png':
@@ -708,7 +580,7 @@
 
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = fileName; // ファイル名を使用してダウンロード
+                link.download = embeddedFileName;  // 埋め込んだファイル名を使用してダウンロード
                 link.className = 'btn-uniform';
                 link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
