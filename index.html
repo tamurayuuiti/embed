@@ -383,10 +383,13 @@
         function embedFileName(fileName) {
             let pixelIndex = 0;
 
-            const fileNameLengthBinary = fileName.length.toString(2).padStart(16, '0');
-            for (let i = 0; i < fileNameLengthBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameLengthBinary[i]);
-                pixelIndex += 4;
+            const identifier = "FILENAME:";  // ファイル名識別子
+            for (let i = 0; i < identifier.length; i++) {
+                const charBinary = identifier[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
             }
 
             for (let i = 0; i < fileName.length; i++) {
@@ -467,23 +470,34 @@
 
             let pixelIndex = 0;
 
-            let fileNameLengthBinary = '';
-            for (let i = 0; i < 16; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                fileNameLengthBinary += bit;
-                pixelIndex += 4;
-            }
-            const fileNameLength = parseInt(fileNameLengthBinary, 2);
-
-            let fileName = '';
-            for (let i = 0; i < fileNameLength; i++) {
+            let identifier = '';
+            for (let i = 0; i < 9; i++) {  // "FILENAME:" の長さは9
                 let charBinary = '';
                 for (let j = 0; j < 8; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     charBinary += bit;
                     pixelIndex += 4;
                 }
-                fileName += String.fromCharCode(parseInt(charBinary, 2));
+                identifier += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            if (identifier !== 'FILENAME:') {
+                alert("ファイル名が見つかりませんでした。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
+            }
+
+            let fileName = '';
+            while (true) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                const charCode = parseInt(charBinary, 2);
+                if (charCode === 0) break;  // 終端文字が見つかるまで読み取る
+                fileName += String.fromCharCode(charCode);
             }
 
             embeddedFileName = fileName;  // 復元したファイル名を保存
