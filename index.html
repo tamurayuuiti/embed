@@ -492,13 +492,6 @@
                 identifier += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            if (identifier !== 'FILENAME:') {
-                console.error("ファイル名識別子が見つかりませんでした。識別子:", identifier);
-                alert("ファイル名が見つかりませんでした。");
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-                return;
-            }
-
             let fileName = '';
             while (true) {
                 let charBinary = '';
