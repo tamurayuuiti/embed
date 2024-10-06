@@ -493,6 +493,7 @@
             }
 
             if (identifier !== 'FILENAME:') {
+                console.error("ファイル名識別子が見つかりませんでした。識別子:", identifier);
                 alert("ファイル名が見つかりませんでした。");
                 document.getElementById('extractLoadingIndicator').style.display = 'none';
                 return;
@@ -523,6 +524,7 @@
             }
 
             if (extensionIdentifier !== 'EXT:') {
+                console.error("拡張子識別子が見つかりませんでした。識別子:", extensionIdentifier);
                 alert("拡張子が見つかりませんでした。");
                 document.getElementById('extractLoadingIndicator').style.display = 'none';
                 return;
