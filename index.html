@@ -5,38 +5,177 @@
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
     <style>
-        body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
-        .container { max-width: 85%; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; }
-        .section { margin-bottom: 40px; }
-        .section h3 { color: #444; margin-bottom: 10px; }
-        .section p { margin: 5px 0; color: #666; }
-        input[type="file"], input[type="text"], textarea, button, select { margin-top: 10px; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
-        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
-        button:hover { background-color: #45a049; }
-        button:disabled { background-color: #d3d3d3; cursor: not-allowed; }
-        .center { display: block; margin-left: auto; margin-right: auto; }
-        .image-preview { margin-top: 20px; text-align: center; }
-        .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-        .image-preview-container { display: flex; flex-direction: column; }
-        @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
-        .info { font-size: 14px; color: #666; margin-top: 5px; }
-        .details { font-size: 14px; margin-top: 10px; color: #333; }
-        .warning { color: red; }
-        #dropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
-        #dropArea.dragging { border-color: #4CAF50; }
-        #fileDropArea, #extractDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; }
-        #fileDropArea.dragging, #extractDropArea.dragging { border-color: #4CAF50; }
-        #textPreview { max-width: 100%; white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
-        #canvas { display: none; }
-        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
-        .loader, .extract-loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #downloadButton { display: none; }
-        #extractButton { margin-bottom: 20px; }
-        .audio-preview { margin-bottom: 20px; }
-        .image-preview-center { display: block; margin: 0 auto; text-align: center; }
-        #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
+        body {
+            font-family: Arial, sans-serif;
+            margin: 20px;
+            background-color: #f9f9f9;
+        }
+        .container {
+            max-width: 85%;
+            margin: 0 auto;
+            background-color: #fff;
+            padding: 20px;
+            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
+            border-radius: 8px;
+        }
+        .section {
+            margin-bottom: 40px;
+        }
+        .section h3 {
+            color: #444;
+            margin-bottom: 10px;
+        }
+        .section p {
+            margin: 5px 0;
+            color: #666;
+        }
+        input[type="file"], input[type="text"], textarea, button, select {
+            margin-top: 10px;
+            padding: 10px;
+            font-size: 16px;
+            border-radius: 5px;
+            border: 1px solid #ccc;
+        }
+        textarea {
+            width: calc(100% - 22px);
+            height: 80px;
+            resize: vertical;
+        }
+        button {
+            background-color: #4CAF50;
+            color: white;
+            border: none;
+            cursor: pointer;
+            margin-right: 10px;
+            padding: 10px 20px;
+            text-align: center;
+        }
+        button:hover {
+            background-color: #45a049;
+        }
+        button:disabled {
+            background-color: #d3d3d3;
+            cursor: not-allowed;
+        }
+        .center {
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+        }
+        .image-preview {
+            margin-top: 20px;
+            text-align: center;
+        }
+        .image-preview img {
+            max-width: 100%;
+            max-height: 400px;
+            height: auto;
+            border: 1px solid #ccc;
+            margin-top: 10px;
+            padding: 10px;
+            background-color: #f1f1f1;
+            display: block;
+            margin-left: auto;
+            margin-right: auto;
+            box-sizing: border-box;
+        }
+        .image-preview-container {
+            display: flex;
+            flex-direction: column;
+        }
+        @media (min-width: 768px) {
+            .image-preview-container {
+                flex-direction: row;
+                justify-content: space-around;
+            }
+            .image-preview {
+                width: 48%;
+            }
+        }
+        .info {
+            font-size: 14px;
+            color: #666;
+            margin-top: 5px;
+        }
+        .details {
+            font-size: 14px;
+            margin-top: 10px;
+            color: #333;
+        }
+        .warning {
+            color: red;
+        }
+        #dropArea {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 20px;
+            text-align: center;
+            cursor: pointer;
+        }
+        #dropArea.dragging {
+            border-color: #4CAF50;
+        }
+        #fileDropArea, #extractDropArea {
+            border: 2px dashed #ccc;
+            border-radius: 5px;
+            padding: 10px;
+            text-align: center;
+            cursor: pointer;
+        }
+        #fileDropArea.dragging, #extractDropArea.dragging {
+            border-color: #4CAF50;
+        }
+        #textPreview {
+            max-width: 100%;
+            white-space: pre-wrap;
+            word-wrap: break-word;
+            background-color: #f9f9f9;
+            padding: 10px;
+            border: 1px solid #ccc;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        #canvas {
+            display: none;
+        }
+        #loadingIndicator, #extractLoadingIndicator, #uploadIndicator {
+            display: none;
+            margin-top: 10px;
+        }
+        .loader, .extract-loader, .upload-loader {
+            border: 6px solid #f3f3f3;
+            border-radius: 50%;
+            border-top: 6px solid #3498db;
+            width: 40px;
+            height: 40px;
+            animation: spin 2s linear infinite;
+            display: inline-block;
+            margin-right: 10px;
+        }
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        #downloadButton {
+            display: none;
+        }
+        #extractButton {
+            margin-bottom: 20px;
+        }
+        .audio-preview {
+            margin-bottom: 20px;
+        }
+        /* 中心に戻すためのスタイル */
+        .image-preview-center {
+            display: block;
+            margin: 0 auto;
+            text-align: center;
+        }
+        #extractImagePreview {
+            max-width: 100%;
+            display: block;
+            margin: 0 auto;
+        }
     </style>
 </head>
 <body>
@@ -198,7 +337,7 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; // 1KB引く
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024;  // 1KB引く
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -211,6 +350,7 @@
         }
 
         function handleExtractImageUpload(file) {
+            // Reset only the extract image preview when updating extract image
             document.getElementById('extractPreviewImage').src = '';
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -335,7 +475,7 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
-            let fileNameBinary = '';
+            let fileName = '';
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
@@ -359,29 +499,21 @@
 
                 const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
+                fileName = file.name;
                 if (!checkFileSize(fileSize)) return;
 
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
-                    fileExtension = file.name.split('.').pop();
-
-                    // ファイル名をバイナリに変換
-                    const fileName = file.name;
-                    const fileNameLength = fileName.length;
-                    const fileNameLengthBinary = fileNameLength.toString(2).padStart(8, '0');
-                    for (let i = 0; i < fileName.length; i++) {
-                        fileNameBinary += fileName.charCodeAt(i).toString(2).padStart(8, '0');
-                    }
-
-                    embedBinaryData(binaryData, dataType, fileExtension, fileNameBinary, fileNameLengthBinary); 
+                    fileExtension = file.name.split('.').pop(); 
+                    embedBinaryData(binaryData, dataType, fileExtension, fileName);  // ファイル名も埋め込む
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension, fileNameBinary, ''); 
+            embedBinaryData(binaryData, dataType, fileExtension, fileName);  // ファイル名も埋め込む
         }
 
         function determineFileType(mimeType) {
@@ -397,7 +529,7 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType, fileExtension, fileNameBinary, fileNameLengthBinary) {
+        function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
             let pixelIndex = 0;
 
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
@@ -424,16 +556,18 @@
                 }
             }
 
-            // ファイル名の長さを埋め込む
-            for (let i = 0; i < fileNameLengthBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameLengthBinary[i]);
+            const fileNameBinaryLength = fileName.length.toString(2).padStart(16, '0');
+            for (let i = 0; i < fileNameBinaryLength.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameBinaryLength[i]);
                 pixelIndex += 4;
             }
 
-            // ファイル名を埋め込む
-            for (let i = 0; i < fileNameBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(fileNameBinary[i]);
-                pixelIndex += 4;
+            for (let i = 0; i < fileName.length; i++) {
+                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
             }
 
             for (let i = 0; i < binaryData.length; i++) {
@@ -495,16 +629,14 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            // ファイル名の長さを抽出
             let fileNameLengthBinary = '';
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; i < 16; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 fileNameLengthBinary += bit;
                 pixelIndex += 4;
             }
             const fileNameLength = parseInt(fileNameLengthBinary, 2);
 
-            // ファイル名を抽出
             let fileName = '';
             for (let i = 0; i < fileNameLength; i++) {
                 let charBinary = '';
@@ -576,7 +708,7 @@
 
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `${fileName}`; 
+                link.download = fileName; // ファイル名を使用してダウンロード
                 link.className = 'btn-uniform';
                 link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
