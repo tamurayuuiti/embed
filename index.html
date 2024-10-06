@@ -123,8 +123,6 @@
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
-        let embeddedFileName = '';  // ファイル名を保存する変数
-        let embeddedFileExtension = '';  // 拡張子を保存する変数
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -198,138 +196,30 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
-                    const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024;  // 1KB引く
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; // 1KB引く
+
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
                     isImageUploaded = true;
+                    validateEmbedButton();
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function handleExtractImageUpload(file) {
-            // Reset only the extract image preview when updating extract image
-            document.getElementById('extractPreviewImage').src = '';
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.getElementById('canvas');
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                    document.getElementById('extractPreviewImage').src = event.target.result;
-                    document.getElementById('extractImagePreview').style.display = 'block';
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        const dropArea = document.getElementById('dropArea');
-        dropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropArea.classList.add('dragging');
-        });
-        dropArea.addEventListener('dragleave', () => {
-            dropArea.classList.remove('dragging');
-        });
-        dropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-                uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-                document.getElementById('embedImageInput').files = e.dataTransfer.files;
-            }
-        });
-
-        const fileDropArea = document.getElementById('fileDropArea');
-        fileDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileDropArea.classList.add('dragging');
-        });
-        fileDropArea.addEventListener('dragleave', () => {
-            fileDropArea.classList.remove('dragging');
-        });
-        fileDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileDropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            displayFileDetails(file); 
-            isFileUploaded = true;
-            document.getElementById('fileInput').files = e.dataTransfer.files;
-            resetUI();
-        });
-
-        const extractDropArea = document.getElementById('extractDropArea');
-        extractDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.add('dragging');
-        });
-        extractDropArea.addEventListener('dragleave', () => {
-            extractDropArea.classList.remove('dragging');
-        });
-        extractDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
-                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
-                document.getElementById('extractImageInput').files = e.dataTransfer.files;
-            }
-        });
-
-        document.getElementById('embedImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-                uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-            }
-        });
-
-        document.getElementById('extractImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
-            }
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            displayFileDetails(file); 
-            isFileUploaded = true;
-            resetUI();
-        });
-
-        function checkFileSize(fileSize) {
-            if (fileSize > maxDataBytes) {
-                displayFileSizeWarning(fileSize);
-                return false;
-            }
-            return true;
-        }
-
-        function toggleInput() {
+        function validateEmbedButton() {
             const embedOption = document.getElementById('embedOption').value;
-            if (embedOption === 'file') {
-                document.getElementById('fileInputContainer').style.display = 'block';
-                document.getElementById('textInputContainer').style.display = 'none';
+            const textInput = document.getElementById('textInput').value;
+            const fileInput = document.getElementById('fileInput').files.length;
+
+            if (!isImageUploaded || (embedOption === 'text' && !textInput) || (embedOption === 'file' && !fileInput)) {
+                document.getElementById('embedButton').disabled = true;
             } else {
-                document.getElementById('fileInputContainer').style.display = 'none';
-                document.getElementById('textInputContainer').style.display = 'block';
+                document.getElementById('embedButton').disabled = false;
             }
         }
 
@@ -338,10 +228,19 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
-            let fileName = '';
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
+                return;
+            }
+
+            if (embedOption === 'text' && !document.getElementById('textInput').value) {
+                alert("文字が入力されていません。");
+                return;
+            }
+
+            if (embedOption === 'file' && document.getElementById('fileInput').files.length === 0) {
+                alert("ファイルがアップロードされていません。");
                 return;
             }
 
@@ -362,61 +261,28 @@
 
                 const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
-                fileName = file.name;
-                embeddedFileName = fileName.split('.').slice(0, -1).join('.');  // 拡張子を除いたファイル名
-                embeddedFileExtension = file.name.split('.').pop();  // 拡張子を取得
                 if (!checkFileSize(fileSize)) return;
 
                 const reader = new FileReader();
                 reader.onload = function(event) {
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
-                    embedFileNameAndExtension(embeddedFileName, embeddedFileExtension);  // まずファイル名と拡張子を埋め込む
-                    embedBinaryData(binaryData, dataType);  // ファイルデータを埋め込む
+                    fileExtension = file.name.split('.').pop(); 
+                    embedBinaryData(binaryData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType);  // ファイル名に関係ないデータ埋め込み
+            embedBinaryData(binaryData, dataType, fileExtension); 
         }
 
-        function embedFileNameAndExtension(fileName, fileExtension) {
-            let pixelIndex = 0;
-
-            const fileNameIdentifier = "FILENAME:";  // ファイル名識別子
-            for (let i = 0; i < fileNameIdentifier.length; i++) {
-                const charBinary = fileNameIdentifier[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
+        function checkFileSize(fileSize) {
+            if (fileSize > maxDataBytes) {
+                displayFileSizeWarning(fileSize);
+                return false;
             }
-
-            for (let i = 0; i < fileName.length; i++) {
-                const charBinary = fileName[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
-            }
-
-            const extensionIdentifier = "EXT:";  // 拡張子識別子
-            for (let i = 0; i < extensionIdentifier.length; i++) {
-                const charBinary = extensionIdentifier[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
-            }
-
-            for (let i = 0; i < fileExtension.length; i++) {
-                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
-                }
-            }
+            return true;
         }
 
         function determineFileType(mimeType) {
@@ -432,8 +298,8 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType) {
-            let pixelIndex = 128;  // ファイル名と拡張子を埋め込んだ後のデータ開始位置に移動
+        function embedBinaryData(binaryData, dataType, fileExtension) {
+            let pixelIndex = 0;
 
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
@@ -443,6 +309,20 @@
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 4;
+            }
+
+            const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
+            for (let i = 0; i < extLengthBinary.length; i++) {
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
+                pixelIndex += 4;
+            }
+
+            for (let i = 0; i < fileExtension.length; i++) {
+                const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 4;
+                }
             }
 
             for (let i = 0; i < binaryData.length; i++) {
@@ -474,71 +354,6 @@
 
             let pixelIndex = 0;
 
-            let identifier = '';
-            for (let i = 0; i < 9; i++) {  // "FILENAME:" の長さは9
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                identifier += String.fromCharCode(parseInt(charBinary, 2));
-            }
-
-            if (identifier !== 'FILENAME:') {
-                alert("ファイル名が見つかりませんでした。");
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-                return;
-            }
-
-            let fileName = '';
-            while (true) {
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                const charCode = parseInt(charBinary, 2);
-                if (charCode === 0) break;  // 終端文字が見つかるまで読み取る
-                fileName += String.fromCharCode(charCode);
-            }
-
-            let extensionIdentifier = '';
-            for (let i = 0; i < 4; i++) {  // "EXT:" の長さは4
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                extensionIdentifier += String.fromCharCode(parseInt(charBinary, 2));
-            }
-
-            if (extensionIdentifier !== 'EXT:') {
-                alert("拡張子が見つかりませんでした。");
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-                return;
-            }
-
-            let fileExtension = '';
-            while (true) {
-                let charBinary = '';
-                for (let j = 0; j < 8; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                const charCode = parseInt(charBinary, 2);
-                if (charCode === 0) break;
-                fileExtension += String.fromCharCode(charCode);
-            }
-
-            embeddedFileName = fileName;  // 復元したファイル名を保存
-            embeddedFileExtension = fileExtension;  // 復元した拡張子を保存
-
-            pixelIndex = 128;  // ファイル名と拡張子を読み取った後の位置に移動
-
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
 
@@ -549,6 +364,25 @@
                 pixelIndex += 4;
             }
             const dataLength = parseInt(binaryLength, 2);
+
+            let extLengthBinary = '';
+            for (let i = 0; i < 8; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                extLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const extLength = parseInt(extLengthBinary, 2);
+
+            let fileExtension = '';
+            for (let i = 0; i < extLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
+            }
 
             let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
@@ -589,9 +423,9 @@
             } else {
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                document.getElementById('extractedData').innerText = `ファイル名: ${embeddedFileName}\nファイル形式: ${embeddedFileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
+                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
 
-                switch (embeddedFileExtension) {
+                switch (fileExtension) {
                     case 'png':
                     case 'jpg':
                     case 'jpeg':
@@ -610,7 +444,7 @@
 
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = `${embeddedFileName}.${embeddedFileExtension}`;  // 埋め込んだファイル名と拡張子を使用してダウンロード
+                link.download = `extracted_file.${fileExtension}`; 
                 link.className = 'btn-uniform';
                 link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
