@@ -516,13 +516,6 @@
                 extensionIdentifier += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            if (extensionIdentifier !== 'EXT:') {
-                console.error("拡張子識別子が見つかりませんでした。識別子:", extensionIdentifier);
-                alert("拡張子が見つかりませんでした。");
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-                return;
-            }
-
             let fileExtension = '';
             while (true) {
                 let charBinary = '';
