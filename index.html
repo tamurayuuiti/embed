@@ -285,7 +285,7 @@
         }
 
         function displayFileSizeWarning(fileSize) {
-            alert(ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。);
+            alert(`ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。`);
         }
 
         function formatBytes(bytes) {
@@ -303,17 +303,17 @@
             const fileName = file.name;
             const fileType = file.type || '不明';
 
-            document.getElementById('uploadedFileName').innerText = ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType};
+            document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
         }
 
         function checkTextSize() {
             const text = document.getElementById('textInput').value;
             const textLength = new TextEncoder().encode(text).length; 
-            document.getElementById('embedTextCount').innerText = 現在の文字数: ${textLength} バイト;
+            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
             
             if (textLength > maxDataBytes) {
                 document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += （警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）;
+                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
             } else {
                 document.getElementById('embedTextCount').classList.remove('warning');
             }
@@ -339,9 +339,9 @@
                     const pixelCount = img.width * img.height;
                     maxDataBytes = Math.floor(pixelCount * 3 / 8); 
                     document.getElementById('embedImageDetails').innerText = 
-                        画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)};
+                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
-                    document.getElementById('embedCapacityInfo').innerText = この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。;
+                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
                     isImageUploaded = true;
                 };
                 img.src = event.target.result;
@@ -386,7 +386,7 @@
             if (validateImageFile(file)) {
                 handleImageUpload(file);
                 uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = アップロードした画像: ${uploadedFileName};
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
                 document.getElementById('embedImageInput').files = e.dataTransfer.files;
             }
         });
@@ -423,7 +423,7 @@
             const file = e.dataTransfer.files[0];
             if (validateImageFile(file)) {
                 handleExtractImageUpload(file);
-                document.getElementById('extractedFileName').innerText = アップロードした画像: ${file.name};
+                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
                 document.getElementById('extractImageInput').files = e.dataTransfer.files;
             }
         });
@@ -433,7 +433,7 @@
             if (validateImageFile(file)) {
                 handleImageUpload(file);
                 uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = アップロードした画像: ${uploadedFileName};
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
             }
         });
 
@@ -639,8 +639,8 @@
                 const decoder = new TextDecoder();
                 const extractedText = decoder.decode(new Uint8Array(binaryData));
                 
-                extractedFilePreview.innerHTML = <pre id="textPreview">${extractedText.trim()}</pre>;
-                document.getElementById('extractedData').innerText = テキストサイズ: ${formatBytes(binaryData.length)};
+                extractedFilePreview.innerHTML = `<pre id="textPreview">${extractedText.trim()}</pre>`;
+                document.getElementById('extractedData').innerText = `テキストサイズ: ${formatBytes(binaryData.length)}`;
 
                 const textBlob = new Blob([new Uint8Array(binaryData)], { type: 'text/plain' });
                 const link = document.createElement('a');
@@ -652,20 +652,20 @@
             } else {
                 const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
 
-                document.getElementById('extractedData').innerText = ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)};
+                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
 
                 switch (fileExtension) {
                     case 'png':
                     case 'jpg':
                     case 'jpeg':
                     case 'gif':
-                        extractedFilePreview.innerHTML = <img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">;
+                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
                         break;
                     case 'wav':
-                        extractedFilePreview.innerHTML = <audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>;
+                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
                         break;
                     case 'pdf':
-                        extractedFilePreview.innerHTML = <embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />;
+                        extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
                         break;
                     default:
                         extractedFilePreview.innerHTML = "プレビューできません（ファイルデータ）";
@@ -673,9 +673,9 @@
 
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = extracted_file.${fileExtension}; 
+                link.download = `extracted_file.${fileExtension}`; 
                 link.className = 'btn-uniform';
-                link.textContent = ファイルをダウンロード;
+                link.textContent = `ファイルをダウンロード`;
                 extractedFilePreview.appendChild(link);
             }
 
