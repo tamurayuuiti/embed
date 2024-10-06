@@ -417,13 +417,6 @@
                     pixelIndex += 4;
                 }
             }
-
-            // ファイル名と拡張子の終端を示すNULL文字 (0x00) を追加
-            const nullCharBinary = '00000000';
-            for (let i = 0; i < 8; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(nullCharBinary[i]);
-                pixelIndex += 4;
-            }
         }
 
         function determineFileType(mimeType) {
@@ -492,6 +485,12 @@
                 identifier += String.fromCharCode(parseInt(charBinary, 2));
             }
 
+            if (identifier !== 'FILENAME:') {
+                alert("ファイル名が見つかりませんでした。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
+            }
+
             let fileName = '';
             while (true) {
                 let charBinary = '';
@@ -501,7 +500,7 @@
                     pixelIndex += 4;
                 }
                 const charCode = parseInt(charBinary, 2);
-                if (charCode === 0) break;  // 終端文字 (NULL) が見つかるまで読み取る
+                if (charCode === 0) break;  // 終端文字が見つかるまで読み取る
                 fileName += String.fromCharCode(charCode);
             }
 
@@ -514,6 +513,12 @@
                     pixelIndex += 4;
                 }
                 extensionIdentifier += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            if (extensionIdentifier !== 'EXT:') {
+                alert("拡張子が見つかりませんでした。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
             }
 
             let fileExtension = '';
