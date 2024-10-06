@@ -237,9 +237,6 @@
                 <p>または</p>
                 <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
             </div>
-            <div id="extractUploadIndicator">
-                <div class="upload-loader"></div>抽出用画像アップロード中...
-            </div>
             <p id="extractedFileName" class="info"></p>
 
             <button id="extractButton" onclick="extractData()">データを抽出する</button>
@@ -353,7 +350,8 @@
         }
 
         function handleExtractImageUpload(file) {
-            resetUI();
+            // Reset only the extract image preview when updating extract image
+            document.getElementById('extractPreviewImage').src = '';
             const reader = new FileReader();
             reader.onload = function(event) {
                 const img = new Image();
