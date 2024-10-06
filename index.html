@@ -196,30 +196,137 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
+                    const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; // 1KB引く
-
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; 
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
                     isImageUploaded = true;
-                    validateEmbedButton();
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
         }
 
-        function validateEmbedButton() {
-            const embedOption = document.getElementById('embedOption').value;
-            const textInput = document.getElementById('textInput').value;
-            const fileInput = document.getElementById('fileInput').files.length;
+        function handleExtractImageUpload(file) {
+            document.getElementById('extractPreviewImage').src = '';
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
 
-            if (!isImageUploaded || (embedOption === 'text' && !textInput) || (embedOption === 'file' && !fileInput)) {
-                document.getElementById('embedButton').disabled = true;
+                    document.getElementById('extractPreviewImage').src = event.target.result;
+                    document.getElementById('extractImagePreview').style.display = 'block';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        const dropArea = document.getElementById('dropArea');
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragging');
+        });
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragging');
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (validateImageFile(file)) {
+                handleImageUpload(file);
+                uploadedFileName = file.name;
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+                document.getElementById('embedImageInput').files = e.dataTransfer.files;
+            }
+        });
+
+        const fileDropArea = document.getElementById('fileDropArea');
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.add('dragging');
+        });
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.classList.remove('dragging');
+        });
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            displayFileDetails(file); 
+            isFileUploaded = true;
+            document.getElementById('fileInput').files = e.dataTransfer.files;
+            resetUI();
+        });
+
+        const extractDropArea = document.getElementById('extractDropArea');
+        extractDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.add('dragging');
+        });
+        extractDropArea.addEventListener('dragleave', () => {
+            extractDropArea.classList.remove('dragging');
+        });
+        extractDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
+                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
+                document.getElementById('extractImageInput').files = e.dataTransfer.files;
+            }
+        });
+
+        document.getElementById('embedImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleImageUpload(file);
+                uploadedFileName = file.name;
+                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
+            }
+        });
+
+        document.getElementById('extractImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
+            }
+        });
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            displayFileDetails(file); 
+            isFileUploaded = true;
+            resetUI();
+        });
+
+        function checkFileSize(fileSize) {
+            if (fileSize > maxDataBytes) {
+                displayFileSizeWarning(fileSize);
+                return false;
+            }
+            return true;
+        }
+
+        function toggleInput() {
+            const embedOption = document.getElementById('embedOption').value;
+            if (embedOption === 'file') {
+                document.getElementById('fileInputContainer').style.display = 'block';
+                document.getElementById('textInputContainer').style.display = 'none';
             } else {
-                document.getElementById('embedButton').disabled = false;
+                document.getElementById('fileInputContainer').style.display = 'none';
+                document.getElementById('textInputContainer').style.display = 'block';
             }
         }
 
@@ -231,16 +338,6 @@
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
-                return;
-            }
-
-            if (embedOption === 'text' && !document.getElementById('textInput').value) {
-                alert("文字が入力されていません。");
-                return;
-            }
-
-            if (embedOption === 'file' && document.getElementById('fileInput').files.length === 0) {
-                alert("ファイルがアップロードされていません。");
                 return;
             }
 
@@ -275,14 +372,6 @@
             }
 
             embedBinaryData(binaryData, dataType, fileExtension); 
-        }
-
-        function checkFileSize(fileSize) {
-            if (fileSize > maxDataBytes) {
-                displayFileSizeWarning(fileSize);
-                return false;
-            }
-            return true;
         }
 
         function determineFileType(mimeType) {
