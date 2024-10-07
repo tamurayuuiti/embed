@@ -366,14 +366,16 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     const parityData = addParityBits(binaryData);  // パリティビット追加
-                    embedBinaryData(parityData, dataType, fileExtension); 
+                    const hammingData = addHammingCode(parityData);  // ハミング符号追加
+                    embedBinaryData(hammingData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
             const parityData = addParityBits(binaryData);  // パリティビット追加
-            embedBinaryData(parityData, dataType, fileExtension); 
+            const hammingData = addHammingCode(parityData);  // ハミング符号追加
+            embedBinaryData(hammingData, dataType, fileExtension); 
         }
 
         function addParityBits(binaryData) {
@@ -391,6 +393,27 @@
             const binaryString = byte.toString(2).padStart(8, '0');
             const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
             return numOnes % 2 === 0 ? 0 : 1;  // 偶数パリティ
+        }
+
+        function addHammingCode(binaryData) {
+            const hammingData = [];
+            for (let i = 0; i < binaryData.length; i++) {
+                const byte = binaryData[i];
+                const hammingByte = calculateHammingCode(byte);
+                hammingData.push(hammingByte);
+            }
+            return new Uint8Array(hammingData);
+        }
+
+        function calculateHammingCode(byte) {
+            const dataBits = byte.toString(2).padStart(8, '0').split('').map(Number);
+
+            const p1 = dataBits[0] ^ dataBits[1] ^ dataBits[3] ^ dataBits[4] ^ dataBits[6];
+            const p2 = dataBits[0] ^ dataBits[2] ^ dataBits[3] ^ dataBits[5] ^ dataBits[6];
+            const p4 = dataBits[1] ^ dataBits[2] ^ dataBits[3];
+            const p8 = dataBits[4] ^ dataBits[5] ^ dataBits[6];
+
+            return parseInt([p1, p2, dataBits[0], p4, dataBits[1], dataBits[2], dataBits[3], p8].join(''), 2);
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
@@ -497,7 +520,12 @@
                     console.warn(`パリティエラー: データが破損している可能性があります (バイト: ${extractedByte})`);
                 }
 
-                binaryData.push(extractedByte);
+                const correctedByte = correctHammingCode(extractedByte);  // ハミング符号による訂正
+                if (correctedByte !== extractedByte) {
+                    console.warn(`ハミング訂正: データが訂正されました (バイト: ${correctedByte})`);
+                }
+
+                binaryData.push(correctedByte);
             }
 
             if (binaryData.length === 0) {
@@ -565,6 +593,22 @@
             const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
             const calculatedParity = numOnes % 2 === 0 ? 0 : 1;
             return calculatedParity === parityBit;
+        }
+
+        function correctHammingCode(byte) {
+            const binaryString = byte.toString(2).padStart(8, '0').split('').map(Number);
+
+            const p1 = binaryString[0] ^ binaryString[2] ^ binaryString[4] ^ binaryString[6];
+            const p2 = binaryString[1] ^ binaryString[2] ^ binaryString[5] ^ binaryString[6];
+            const p4 = binaryString[3] ^ binaryString[4] ^ binaryString[5] ^ binaryString[6];
+
+            const errorPosition = p1 + (p2 << 1) + (p4 << 2);
+
+            if (errorPosition > 0) {
+                binaryString[errorPosition - 1] = binaryString[errorPosition - 1] === 0 ? 1 : 0;  // エラー訂正
+            }
+
+            return parseInt(binaryString.join(''), 2);
         }
 
         function downloadImage() {
