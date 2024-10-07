@@ -123,7 +123,6 @@
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
-        let fileExtension = '';  // ファイル拡張子を追跡
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -199,11 +198,7 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-
-                    // 埋め込み可能容量の計算。メタデータとヘッダーを考慮
-                    const headerSize = 32 + 8 + (document.getElementById('embedOption').value === 'file' ? 8 * fileExtension.length : 0);
-                    maxDataBytes = Math.floor((pixelCount * 3 - headerSize) / 8) - 1024;
-                    
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; 
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -339,7 +334,7 @@
             const embedOption = document.getElementById('embedOption').value;
             let binaryData;
             let dataType;
-            fileExtension = '';
+            let fileExtension = '';
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
