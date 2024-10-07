@@ -198,7 +198,7 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 1024;  // 埋め込み可能容量の80%を計算
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 1024; 
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -365,26 +365,32 @@
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
-                    embedBinaryData(binaryData, dataType, fileExtension); 
+                    const parityData = addParityBits(binaryData);  // パリティビット追加
+                    embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            embedBinaryData(binaryData, dataType, fileExtension); 
+            const parityData = addParityBits(binaryData);  // パリティビット追加
+            embedBinaryData(parityData, dataType, fileExtension); 
         }
 
-        function determineFileType(mimeType) {
-            const textTypes = ['text/plain', 'application/json', 'text/csv'];
-            const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
-            const audioTypes = ['audio/wav'];
-            const pdfType = ['application/pdf'];
+        function addParityBits(binaryData) {
+            const parityData = [];
+            for (let i = 0; i < binaryData.length; i++) {
+                const byte = binaryData[i];
+                const parityBit = calculateParity(byte);
+                parityData.push(byte);
+                parityData.push(parityBit);  // 8ビットごとにパリティビット追加
+            }
+            return new Uint8Array(parityData);
+        }
 
-            if (textTypes.includes(mimeType)) return 'text';
-            if (imageTypes.includes(mimeType)) return 'image';
-            if (audioTypes.includes(mimeType)) return 'audio';
-            if (pdfType.includes(mimeType)) return 'pdf';
-            return 'unknown';
+        function calculateParity(byte) {
+            const binaryString = byte.toString(2).padStart(8, '0');
+            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
+            return numOnes % 2 === 0 ? 0 : 1;  // 偶数パリティ
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
@@ -481,7 +487,17 @@
                     byte += bit;
                     pixelIndex += 4;
                 }
-                binaryData.push(parseInt(byte, 2));
+                const extractedByte = parseInt(byte, 2);
+                const parityBit = imgData.data[pixelIndex] & 1;  // パリティビットを抽出
+                pixelIndex += 4;
+
+                // パリティチェック
+                const isParityValid = checkParity(extractedByte, parityBit);
+                if (!isParityValid) {
+                    console.warn(`パリティエラー: データが破損している可能性があります (バイト: ${extractedByte})`);
+                }
+
+                binaryData.push(extractedByte);
             }
 
             if (binaryData.length === 0) {
@@ -542,6 +558,13 @@
             }
 
             document.getElementById('extractLoadingIndicator').style.display = 'none';
+        }
+
+        function checkParity(byte, parityBit) {
+            const binaryString = byte.toString(2).padStart(8, '0');
+            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
+            const calculatedParity = numOnes % 2 === 0 ? 0 : 1;
+            return calculatedParity === parityBit;
         }
 
         function downloadImage() {
