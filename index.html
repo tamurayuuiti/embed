@@ -198,7 +198,11 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; 
+
+                    // ヘッダーやメタデータに使うビット数を差し引いた最大埋め込み容量を計算
+                    const headerSize = 32 + 8 + (document.getElementById('embedOption').value === 'file' ? 8 * fileExtension.length : 0);
+                    maxDataBytes = Math.floor((pixelCount * 3 - headerSize) / 8) - 1024; // メタデータ分を引く
+                    
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
