@@ -196,8 +196,9 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
+                    const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor((pixelCount * 4) / 8) - 1024; // RGBAのすべてのチャネルを使用
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 1024; 
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -389,11 +390,9 @@
         function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
 
-            // データタイプ（テキストまたはファイル）を1ビットで記録
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
             pixelIndex += 4;
 
-            // データの長さを32ビットで記録
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
@@ -401,14 +400,12 @@
                 pixelIndex += 4;
             }
 
-            // 拡張子の長さを8ビットで記録
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
                 pixelIndex += 4;
             }
 
-            // 拡張子をバイトごとに記録
             for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
@@ -417,7 +414,6 @@
                 }
             }
 
-            // データ本体をバイトごとに記録
             for (let i = 0; i < binaryData.length; i++) {
                 const byte = binaryData[i].toString(2).padStart(8, '0');
                 for (let bit of byte) {
@@ -429,15 +425,8 @@
             const ctx = document.getElementById('canvas').getContext('2d');
             ctx.putImageData(imgData, 0, 0);
 
-            canvas.toBlob(function(blob) {
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = 'stego_image.png';
-                link.click();
-                URL.revokeObjectURL(link.href); 
-            });
-
-            document.getElementById('outputPreviewImage').src = canvas.toDataURL();
+            const dataUrl = canvas.toDataURL();
+            document.getElementById('outputPreviewImage').src = dataUrl;
             document.getElementById('outputImagePreview').style.display = 'block';
 
             document.getElementById('downloadButton').style.display = 'block';
@@ -454,11 +443,9 @@
 
             let pixelIndex = 0;
 
-            // データがファイルかどうかを判定
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
 
-            // データの長さを32ビットで読み取る
             let binaryLength = '';
             for (let i = 0; i < 32; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
@@ -467,7 +454,6 @@
             }
             const dataLength = parseInt(binaryLength, 2);
 
-            // 拡張子の長さを8ビットで読み取る
             let extLengthBinary = '';
             for (let i = 0; i < 8; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
@@ -476,7 +462,6 @@
             }
             const extLength = parseInt(extLengthBinary, 2);
 
-            // 拡張子を読み取る
             let fileExtension = '';
             for (let i = 0; i < extLength; i++) {
                 let charBinary = '';
@@ -488,7 +473,6 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            // データ本体を読み取る
             let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
                 let byte = '';
@@ -556,6 +540,17 @@
             }
 
             document.getElementById('extractLoadingIndicator').style.display = 'none';
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            canvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'stego_image.png';
+                link.click();
+                URL.revokeObjectURL(link.href); 
+            });
         }
     </script>
 </body>
