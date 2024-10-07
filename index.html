@@ -433,7 +433,7 @@
             document.getElementById('loadingIndicator').style.display = 'none';
         }
 
-        async function extractData() {
+        function extractData() {
             if (!imgData) {
                 alert("抽出用の画像がアップロードされていません。");
                 return;
@@ -482,9 +482,6 @@
                     pixelIndex += 4;
                 }
                 binaryData.push(parseInt(byte, 2));
-                if (i % 1000 === 0) {
-                    await new Promise(resolve => setTimeout(resolve, 0));
-                }
             }
 
             if (binaryData.length === 0) {
