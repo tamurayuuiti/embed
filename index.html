@@ -164,7 +164,8 @@
             const fileName = file.name;
             const fileType = file.type || '不明';
 
-            document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
+            // 実際のファイルサイズを正確に表示
+            document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, 実際のファイルサイズ: ${file.size} バイト, ファイル形式: ${fileType}`;
         }
 
         function checkTextSize() {
@@ -199,10 +200,9 @@
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
 
-                    // ヘッダーやメタデータに使うビット数を差し引いた最大埋め込み容量を計算
                     const headerSize = 32 + 8 + (document.getElementById('embedOption').value === 'file' ? 8 * fileExtension.length : 0);
-                    maxDataBytes = Math.floor((pixelCount * 3 - headerSize) / 8) - 1024; // メタデータ分を引く
-                    
+                    maxDataBytes = Math.floor((pixelCount * 3 - headerSize) / 8) - 1;
+
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
