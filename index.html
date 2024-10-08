@@ -37,6 +37,9 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
+        #progressDisplay { margin-top: 20px; font-size: 14px; color: #333; }
+        #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
+        #diffDisplay { color: red; font-family: monospace; margin-top: 20px; }
     </style>
 </head>
 <body>
@@ -89,6 +92,10 @@
                     <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
                 </div>
             </div>
+
+            <div id="progressDisplay"></div>
+            <div id="errorDisplay"></div>
+            <div id="diffDisplay"></div>
         </div>
 
         <div class="section">
@@ -131,6 +138,9 @@
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('extractedFilePreview').innerHTML = '';
             document.getElementById('extractedData').innerText = '';
+            document.getElementById('progressDisplay').innerText = '';
+            document.getElementById('errorDisplay').innerText = '';
+            document.getElementById('diffDisplay').innerText = '';
         }
 
         function validateImageFile(file) {
@@ -146,8 +156,19 @@
             return true;
         }
 
-        function displayFileSizeWarning(fileSize) {
-            alert(`ファイルサイズが大きすぎます。選択されたファイルサイズ: ${formatBytes(fileSize)}、最大許容量: ${formatBytes(maxDataBytes)}です。`);
+        function displayProgress(message) {
+            const progressDisplay = document.getElementById('progressDisplay');
+            progressDisplay.innerText += message + '\n';
+        }
+
+        function displayError(message) {
+            const errorDisplay = document.getElementById('errorDisplay');
+            errorDisplay.innerText = message;
+        }
+
+        function displayDiff(diffMessage) {
+            const diffDisplay = document.getElementById('diffDisplay');
+            diffDisplay.innerHTML = diffMessage;
         }
 
         function formatBytes(bytes) {
@@ -343,6 +364,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
+            displayProgress('ファイルの検証を開始しました...');
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
@@ -368,6 +390,7 @@
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+                    displayProgress('データの埋め込みを開始しました...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -404,6 +427,7 @@
             }
             const checksum = calculateChecksum(parityData);  // チェックサム追加
             parityData.push(checksum);
+            displayProgress('データにパリティビット、ハミング符号、チェックサムを追加しました');
             return new Uint8Array(parityData);
         }
 
@@ -472,8 +496,11 @@
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
+                displayProgress('データの埋め込みが正常に完了しました');
             } else {
-                alert('埋め込みデータが正しくありません。再度お試しください。');
+                displayProgress('データの検証に失敗しました');
+                const diff = calculateDiff(originalBinaryData, extractedBinaryData);
+                displayDiff(diff);
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
         }
@@ -533,6 +560,17 @@
             return true;
         }
 
+        function calculateDiff(original, extracted) {
+            let diffMessage = '';
+            const length = Math.max(original.length, extracted.length);
+            for (let i = 0; i < length; i++) {
+                if (original[i] !== extracted[i]) {
+                    diffMessage += `位置 ${i}: 元データ ${original[i]} - 抽出データ ${extracted[i]}<br>`;
+                }
+            }
+            return diffMessage || 'データに違いはありません';
+        }
+
         function downloadImage() {
             const canvas = document.getElementById('canvas');
             canvas.toBlob(function(blob) {
@@ -543,6 +581,6 @@
                 URL.revokeObjectURL(link.href); 
             });
         }
-    </script
+    </script>
 </body>
 </html>
