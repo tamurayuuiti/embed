@@ -76,7 +76,7 @@
                 <div class="loader"></div>埋め込み中...
             </div>
 
-            <button id="downloadButton" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
 
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
@@ -123,6 +123,7 @@
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
+        let originalBinaryData = null;
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -365,55 +366,28 @@
                     binaryData = new Uint8Array(event.target.result); 
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
-                    const parityData = addParityBits(binaryData);  // パリティビット追加
-                    const hammingData = addHammingCode(parityData);  // ハミング符号追加
-                    embedBinaryData(hammingData, dataType, fileExtension); 
+                    originalBinaryData = binaryData;  // 元データを保存
+                    embedBinaryData(binaryData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
-            const parityData = addParityBits(binaryData);  // パリティビット追加
-            const hammingData = addHammingCode(parityData);  // ハミング符号追加
-            embedBinaryData(hammingData, dataType, fileExtension); 
+            originalBinaryData = binaryData;  // 元データを保存
+            embedBinaryData(binaryData, dataType, fileExtension); 
         }
 
-        function addParityBits(binaryData) {
-            const parityData = [];
-            for (let i = 0; i < binaryData.length; i++) {
-                const byte = binaryData[i];
-                const parityBit = calculateParity(byte);
-                parityData.push(byte);
-                parityData.push(parityBit);  // 8ビットごとにパリティビット追加
-            }
-            return new Uint8Array(parityData);
-        }
+        function determineFileType(mimeType) {
+            const textTypes = ['text/plain', 'application/json', 'text/csv'];
+            const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
+            const audioTypes = ['audio/wav'];
+            const pdfType = ['application/pdf'];
 
-        function calculateParity(byte) {
-            const binaryString = byte.toString(2).padStart(8, '0');
-            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
-            return numOnes % 2 === 0 ? 0 : 1;  // 偶数パリティ
-        }
-
-        function addHammingCode(binaryData) {
-            const hammingData = [];
-            for (let i = 0; i < binaryData.length; i++) {
-                const byte = binaryData[i];
-                const hammingByte = calculateHammingCode(byte);
-                hammingData.push(hammingByte);
-            }
-            return new Uint8Array(hammingData);
-        }
-
-        function calculateHammingCode(byte) {
-            const dataBits = byte.toString(2).padStart(8, '0').split('').map(Number);
-
-            const p1 = dataBits[0] ^ dataBits[1] ^ dataBits[3] ^ dataBits[4] ^ dataBits[6];
-            const p2 = dataBits[0] ^ dataBits[2] ^ dataBits[3] ^ dataBits[5] ^ dataBits[6];
-            const p4 = dataBits[1] ^ dataBits[2] ^ dataBits[3];
-            const p8 = dataBits[4] ^ dataBits[5] ^ dataBits[6];
-
-            return parseInt([p1, p2, dataBits[0], p4, dataBits[1], dataBits[2], dataBits[3], p8].join(''), 2);
+            if (textTypes.includes(mimeType)) return 'text';
+            if (imageTypes.includes(mimeType)) return 'image';
+            if (audioTypes.includes(mimeType)) return 'audio';
+            if (pdfType.includes(mimeType)) return 'pdf';
+            return 'unknown';
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
@@ -456,21 +430,27 @@
 
             const dataUrl = canvas.toDataURL();
             document.getElementById('outputPreviewImage').src = dataUrl;
-            document.getElementById('outputImagePreview').style.display = 'block';
 
-            document.getElementById('downloadButton').style.display = 'block';
-            document.getElementById('loadingIndicator').style.display = 'none';
+            verifyEmbeddedData(binaryData, dataType, fileExtension);
         }
 
-        function extractData() {
-            if (!imgData) {
-                alert("抽出用の画像がアップロードされていません。");
-                return;
+        function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
+            const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
+            if (arraysEqual(originalBinaryData, extractedBinaryData)) {
+                // データが一致した場合
+                document.getElementById('outputImagePreview').style.display = 'block';
+                document.getElementById('downloadButton').style.display = 'block';
+                document.getElementById('loadingIndicator').style.display = 'none';
+            } else {
+                // データが一致しない場合、エラー表示
+                alert('埋め込みデータが正しくありません。再度お試しください。');
+                document.getElementById('loadingIndicator').style.display = 'none';
             }
+        }
 
-            document.getElementById('extractLoadingIndicator').style.display = 'block';
-
+        function extractBinaryData() {
             let pixelIndex = 0;
+            let binaryData = [];
 
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
@@ -502,7 +482,6 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            let binaryData = [];
             for (let i = 0; i < dataLength; i++) {
                 let byte = '';
                 for (let j = 0; j < 8; j++) {
@@ -510,105 +489,18 @@
                     byte += bit;
                     pixelIndex += 4;
                 }
-                const extractedByte = parseInt(byte, 2);
-                const parityBit = imgData.data[pixelIndex] & 1;  // パリティビットを抽出
-                pixelIndex += 4;
-
-                // パリティチェック
-                const isParityValid = checkParity(extractedByte, parityBit);
-                if (!isParityValid) {
-                    console.warn(`パリティエラー: データが破損している可能性があります (バイト: ${extractedByte})`);
-                }
-
-                const correctedByte = correctHammingCode(extractedByte);  // ハミング符号による訂正
-                if (correctedByte !== extractedByte) {
-                    console.warn(`ハミング訂正: データが訂正されました (バイト: ${correctedByte})`);
-                }
-
-                binaryData.push(correctedByte);
+                binaryData.push(parseInt(byte, 2));
             }
 
-            if (binaryData.length === 0) {
-                alert("抽出に失敗しました。埋め込まれたデータがありません。");
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-                return;
-            }
-
-            const extractedFilePreview = document.getElementById('extractedFilePreview');
-
-            if (!isFile) {
-                const decoder = new TextDecoder();
-                const extractedText = decoder.decode(new Uint8Array(binaryData));
-                
-                extractedFilePreview.innerHTML = `<pre id="textPreview">${extractedText.trim()}</pre>`;
-                document.getElementById('extractedData').innerText = `テキストサイズ: ${formatBytes(binaryData.length)}`;
-
-                const textBlob = new Blob([new Uint8Array(binaryData)], { type: 'text/plain' });
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(textBlob);
-                link.download = 'extracted_text.txt';
-                link.className = 'btn-uniform';
-                link.textContent = 'テキストファイルとしてダウンロード';
-                extractedFilePreview.appendChild(link);
-            } else {
-                const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
-
-                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
-
-                let downloadFilename;
-                switch (fileExtension) {
-                    case 'png':
-                    case 'jpg':
-                    case 'jpeg':
-                    case 'gif':
-                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
-                        downloadFilename = `extracted_image.${fileExtension}`;
-                        break;
-                    case 'wav':
-                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
-                        downloadFilename = `extracted_audio.wav`;
-                        break;
-                    case 'pdf':
-                        extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
-                        downloadFilename = `extracted_document.pdf`;
-                        break;
-                    default:
-                        extractedFilePreview.innerHTML = "プレビューできません（ファイルデータ）";
-                        downloadFilename = `extracted_file.${fileExtension}`;
-                }
-
-                const link = document.createElement('a');
-                link.href = URL.createObjectURL(blob);
-                link.download = downloadFilename;
-                link.className = 'btn-uniform';
-                link.textContent = `ファイルをダウンロード`;
-                extractedFilePreview.appendChild(link);
-            }
-
-            document.getElementById('extractLoadingIndicator').style.display = 'none';
+            return new Uint8Array(binaryData);
         }
 
-        function checkParity(byte, parityBit) {
-            const binaryString = byte.toString(2).padStart(8, '0');
-            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
-            const calculatedParity = numOnes % 2 === 0 ? 0 : 1;
-            return calculatedParity === parityBit;
-        }
-
-        function correctHammingCode(byte) {
-            const binaryString = byte.toString(2).padStart(8, '0').split('').map(Number);
-
-            const p1 = binaryString[0] ^ binaryString[2] ^ binaryString[4] ^ binaryString[6];
-            const p2 = binaryString[1] ^ binaryString[2] ^ binaryString[5] ^ binaryString[6];
-            const p4 = binaryString[3] ^ binaryString[4] ^ binaryString[5] ^ binaryString[6];
-
-            const errorPosition = p1 + (p2 << 1) + (p4 << 2);
-
-            if (errorPosition > 0) {
-                binaryString[errorPosition - 1] = binaryString[errorPosition - 1] === 0 ? 1 : 0;  // エラー訂正
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
             }
-
-            return parseInt(binaryString.join(''), 2);
+            return true;
         }
 
         function downloadImage() {
