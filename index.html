@@ -367,27 +367,47 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    embedBinaryData(binaryData, dataType, fileExtension); 
+                    const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+                    embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            embedBinaryData(binaryData, dataType, fileExtension); 
+            const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+            embedBinaryData(parityData, dataType, fileExtension); 
         }
 
-        function determineFileType(mimeType) {
-            const textTypes = ['text/plain', 'application/json', 'text/csv'];
-            const imageTypes = ['image/png', 'image/jpeg', 'image/gif'];
-            const audioTypes = ['audio/wav'];
-            const pdfType = ['application/pdf'];
+        function addErrorCheckingData(binaryData) {
+            const parityData = [];
+            for (let i = 0; i < binaryData.length; i++) {
+                const byte = binaryData[i];
+                const parityBit = calculateParity(byte);
+                const hammingCode = calculateHammingCode(byte); // ハミング符号
+                parityData.push(byte);
+                parityData.push(parityBit);  // 8ビットごとにパリティビット追加
+                parityData.push(hammingCode);  // ハミング符号追加
+            }
+            const checksum = calculateChecksum(parityData);  // チェックサム追加
+            parityData.push(checksum);
+            return new Uint8Array(parityData);
+        }
 
-            if (textTypes.includes(mimeType)) return 'text';
-            if (imageTypes.includes(mimeType)) return 'image';
-            if (audioTypes.includes(mimeType)) return 'audio';
-            if (pdfType.includes(mimeType)) return 'pdf';
-            return 'unknown';
+        function calculateParity(byte) {
+            const binaryString = byte.toString(2).padStart(8, '0');
+            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
+            return numOnes % 2 === 0 ? 0 : 1;  // 偶数パリティ
+        }
+
+        function calculateHammingCode(byte) {
+            // ハミング符号計算の簡単な例（実際の実装ではより複雑な計算が必要）
+            const hammingCode = byte ^ 0xFF;  // 簡易的にビットを反転させてみる
+            return hammingCode;
+        }
+
+        function calculateChecksum(data) {
+            return data.reduce((sum, value) => sum + value, 0) % 256;  // 簡易チェックサム計算
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
