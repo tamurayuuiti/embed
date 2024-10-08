@@ -367,14 +367,16 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    embedBinaryData(binaryData, dataType, fileExtension); 
+                    const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+                    embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
                 return;
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            embedBinaryData(binaryData, dataType, fileExtension); 
+            const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+            embedBinaryData(parityData, dataType, fileExtension); 
         }
 
         function determineFileType(mimeType) {
@@ -388,6 +390,36 @@
             if (audioTypes.includes(mimeType)) return 'audio';
             if (pdfType.includes(mimeType)) return 'pdf';
             return 'unknown';
+        }
+
+        function addErrorCheckingData(binaryData) {
+            const parityData = [];
+            for (let i = 0; i < binaryData.length; i++) {
+                const byte = binaryData[i];
+                const parityBit = calculateParity(byte);
+                const hammingCode = calculateHammingCode(byte); // ハミング符号
+                parityData.push(byte);
+                parityData.push(parityBit);  // 8ビットごとにパリティビット追加
+                parityData.push(hammingCode);  // ハミング符号追加
+            }
+            const checksum = calculateChecksum(parityData);  // チェックサム追加
+            parityData.push(checksum);
+            return new Uint8Array(parityData);
+        }
+
+        function calculateParity(byte) {
+            const binaryString = byte.toString(2).padStart(8, '0');
+            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
+            return numOnes % 2 === 0 ? 0 : 1;  // 偶数パリティ
+        }
+
+        function calculateHammingCode(byte) {
+            const hammingCode = byte ^ 0xFF;  // 簡易的にビットを反転させる例
+            return hammingCode;
+        }
+
+        function calculateChecksum(data) {
+            return data.reduce((sum, value) => sum + value, 0) % 256;  // 簡易チェックサム計算
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
@@ -437,12 +469,10 @@
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
             if (arraysEqual(originalBinaryData, extractedBinaryData)) {
-                // データが一致した場合
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
             } else {
-                // データが一致しない場合、エラー表示
                 alert('埋め込みデータが正しくありません。再度お試しください。');
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
@@ -513,6 +543,6 @@
                 URL.revokeObjectURL(link.href); 
             });
         }
-    </script>
+    </script
 </body>
 </html>
