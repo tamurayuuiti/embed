@@ -52,7 +52,7 @@
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <div id="uploadIndicator">
-                <div class="upload-loader"></div>画像アップロード中...
+                <div class="upload-loader"></div><span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
@@ -76,7 +76,7 @@
 
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
-                <div class="loader"></div>埋め込み中...
+                <div class="loader"></div>
             </div>
 
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
@@ -93,7 +93,6 @@
                 </div>
             </div>
 
-            <div id="progressDisplay"></div>
             <div id="errorDisplay"></div>
             <div id="diffDisplay"></div>
         </div>
@@ -109,7 +108,7 @@
 
             <button id="extractButton" onclick="extractData()">データを抽出する</button>
             <div id="extractLoadingIndicator">
-                <div class="extract-loader"></div>データ抽出中...
+                <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
             </div>
 
             <div id="extractedFilePreview" class="file-preview"></div>
@@ -138,7 +137,7 @@
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('extractedFilePreview').innerHTML = '';
             document.getElementById('extractedData').innerText = '';
-            document.getElementById('progressDisplay').innerText = '';
+            document.getElementById('progressDisplay').innerText = '埋め込み中...';
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
         }
@@ -157,8 +156,7 @@
         }
 
         function displayProgress(message) {
-            const progressDisplay = document.getElementById('progressDisplay');
-            progressDisplay.innerText += message + '\n';
+            document.getElementById('progressDisplay').innerText = message;
         }
 
         function displayError(message) {
@@ -364,7 +362,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('ファイルの検証を開始しました...');
+            displayProgress('ファイルサイズチェック中...');
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
@@ -389,8 +387,9 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
+                    displayProgress('ファイルエラーチェック中...');
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
-                    displayProgress('データの埋め込みを開始しました...');
+                    displayProgress('ファイル埋め込み中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -398,7 +397,9 @@
             }
 
             originalBinaryData = binaryData;  // 元データを保存
+            displayProgress('ファイルエラーチェック中...');
             const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+            displayProgress('ファイル埋め込み中...');
             embedBinaryData(parityData, dataType, fileExtension); 
         }
 
@@ -473,21 +474,30 @@
                 }
             }
 
-            for (let i = 0; i < binaryData.length; i++) {
-                const byte = binaryData[i].toString(2).padStart(8, '0');
-                for (let bit of byte) {
-                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
+            // 分割して埋め込み処理を実行し、ブラウザが落ちないようにする
+            const embedChunkSize = 1000; // 一度に処理するピクセル数
+            function embedChunks(startIndex) {
+                if (startIndex >= binaryData.length) {
+                    const ctx = document.getElementById('canvas').getContext('2d');
+                    ctx.putImageData(imgData, 0, 0);
+                    const dataUrl = canvas.toDataURL();
+                    document.getElementById('outputPreviewImage').src = dataUrl;
+                    verifyEmbeddedData(binaryData, dataType, fileExtension);
+                    return;
                 }
+
+                for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
+                    const byte = binaryData[i].toString(2).padStart(8, '0');
+                    for (let bit of byte) {
+                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                        pixelIndex += 4;
+                    }
+                }
+
+                setTimeout(() => embedChunks(startIndex + embedChunkSize), 0); // ブラウザ負荷軽減のために次のチャンクを非同期で処理
             }
 
-            const ctx = document.getElementById('canvas').getContext('2d');
-            ctx.putImageData(imgData, 0, 0);
-
-            const dataUrl = canvas.toDataURL();
-            document.getElementById('outputPreviewImage').src = dataUrl;
-
-            verifyEmbeddedData(binaryData, dataType, fileExtension);
+            embedChunks(0); // 埋め込み処理の開始
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
