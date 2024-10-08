@@ -39,7 +39,8 @@
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
         #progressDisplay { margin-top: 20px; font-size: 14px; color: #333; }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
-        #diffDisplay { color: red; font-family: monospace; margin-top: 20px; }
+        #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
+        #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
@@ -93,6 +94,8 @@
                 </div>
             </div>
 
+            <div id="progressDisplay"></div>
+            <div id="sizeDifference"></div>
             <div id="errorDisplay"></div>
             <div id="diffDisplay"></div>
         </div>
@@ -140,6 +143,7 @@
             document.getElementById('progressDisplay').innerText = '埋め込み中...';
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
+            document.getElementById('sizeDifference').innerText = '';
         }
 
         function validateImageFile(file) {
@@ -167,6 +171,12 @@
         function displayDiff(diffMessage) {
             const diffDisplay = document.getElementById('diffDisplay');
             diffDisplay.innerHTML = diffMessage;
+            diffDisplay.style.display = 'block';
+        }
+
+        function displaySizeDifference(difference) {
+            const sizeDifference = document.getElementById('sizeDifference');
+            sizeDifference.innerText = `ファイルサイズの差: ${difference}%`;
         }
 
         function formatBytes(bytes) {
@@ -387,7 +397,7 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    displayProgress('ファイルエラーチェック中...');
+                    displayProgress('ファイル確認中...');
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
                     displayProgress('ファイル埋め込み中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
@@ -397,7 +407,7 @@
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            displayProgress('ファイルエラーチェック中...');
+            displayProgress('ファイル確認中...');
             const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
             displayProgress('ファイル埋め込み中...');
             embedBinaryData(parityData, dataType, fileExtension); 
@@ -474,7 +484,6 @@
                 }
             }
 
-            // 分割して埋め込み処理を実行し、ブラウザが落ちないようにする
             const embedChunkSize = 1000; // 一度に処理するピクセル数
             function embedChunks(startIndex) {
                 if (startIndex >= binaryData.length) {
@@ -494,7 +503,7 @@
                     }
                 }
 
-                setTimeout(() => embedChunks(startIndex + embedChunkSize), 0); // ブラウザ負荷軽減のために次のチャンクを非同期で処理
+                setTimeout(() => embedChunks(startIndex + embedChunkSize), 0); // 次のチャンクを非同期で処理
             }
 
             embedChunks(0); // 埋め込み処理の開始
@@ -502,13 +511,19 @@
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
-            if (arraysEqual(originalBinaryData, extractedBinaryData)) {
+            const originalLength = originalBinaryData.length;
+            const extractedLength = extractedBinaryData.length;
+            const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
+            
+            if (sizeDifference <= 3) {
+                displayProgress('ファイルサイズチェック中...');
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
                 displayProgress('データの埋め込みが正常に完了しました');
             } else {
-                displayProgress('データの検証に失敗しました');
+                displayProgress('ファイルサイズチェックに失敗しました');
+                displaySizeDifference(sizeDifference.toFixed(2));
                 const diff = calculateDiff(originalBinaryData, extractedBinaryData);
                 displayDiff(diff);
                 document.getElementById('loadingIndicator').style.display = 'none';
@@ -531,7 +546,7 @@
             const dataLength = parseInt(binaryLength, 2);
 
             let extLengthBinary = '';
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; 8 > i; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 extLengthBinary += bit;
                 pixelIndex += 4;
@@ -541,7 +556,7 @@
             let fileExtension = '';
             for (let i = 0; i < extLength; i++) {
                 let charBinary = '';
-                for (let j = 0; j < 8; j++) {
+                for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     charBinary += bit;
                     pixelIndex += 4;
@@ -549,9 +564,9 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            for (let i = 0; i < dataLength; i++) {
+            for (let i = 0; dataLength > i; i++) {
                 let byte = '';
-                for (let j = 0; j < 8; j++) {
+                for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
                     pixelIndex += 4;
