@@ -542,7 +542,7 @@
                 pixelIndex += 4;
             }
 
-            for (let i = 0; i < fileExtension.length; i++) {
+            for (let i = 0; fileExtension.length > i; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
