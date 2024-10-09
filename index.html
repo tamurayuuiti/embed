@@ -211,14 +211,9 @@
         }
 
         function displayProgress(message) {
-            console.log("Progress Message:", message);  // デバッグ用ログ
             const progressElement = document.getElementById('progressDisplay');
-            if (progressElement) {
-                progressElement.innerText = message;
-                progressElement.style.display = 'block';  // 表示を強制
-            } else {
-                console.error('progressDisplay 要素が見つかりません');
-            }
+            progressElement.innerText = message;
+            progressElement.style.display = 'block';  // 表示を強制
         }
 
         function displayError(message) {
@@ -504,7 +499,6 @@
             }
             const checksum = calculateChecksum(parityData);  // チェックサム追加
             parityData.push(checksum);
-            displayProgress('データにパリティビット、ハミング符号、チェックサムを追加しました');
             return new Uint8Array(parityData);
         }
 
