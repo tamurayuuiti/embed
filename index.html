@@ -14,7 +14,7 @@
         textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
         button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
         button:hover { background-color: #45a049; }
-        button:disabled { background-color: #d3d3d3; cursor: not-allowed; }
+        button:disabled { background-color: #d3d3f3; cursor: not-allowed; }
         .center { display: block; margin-left: auto; margin-right: auto; }
         .image-preview { margin-top: 20px; text-align: center; }
         .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
@@ -83,7 +83,7 @@
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <div id="uploadIndicator">
-                <div class="upload-loader"></div><span id="progressDisplay">データ埋め込み中...</span>
+                <div class="upload-loader"></div><span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
@@ -442,8 +442,9 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    displayProgress('データ埋め込み中...');
+                    displayProgress('ファイル確認中...');
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+                    displayProgress('ファイル埋め込み中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -451,8 +452,9 @@
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            displayProgress('データ埋め込み中...');
+            displayProgress('ファイル確認中...');
             const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
+            displayProgress('ファイル埋め込み中...');
             embedBinaryData(parityData, dataType, fileExtension); 
         }
 
@@ -558,12 +560,13 @@
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...');
             const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
+            displayProgress('データサイズチェック中...');
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
             const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
             
-            displayProgress('データサイズチェック中...');
             if (sizeDifference <= 3) {
+                displayProgress('ファイルサイズチェック完了');
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
