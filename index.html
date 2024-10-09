@@ -37,7 +37,15 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
-        #progressDisplay { margin-top: 20px; font-size: 16px; color: black; display: block; }  <!-- メッセージを強制的に表示 -->
+        
+        /* 進行状況メッセージのスタイル */
+        #progressDisplay {
+            font-size: 16px;
+            color: black;
+            display: block;
+            margin-top: 10px;
+            text-align: center; /* メッセージを中央に配置 */
+        }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
@@ -83,7 +91,8 @@
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <div id="uploadIndicator">
-                <div class="upload-loader"></div><span id="progressDisplay">埋め込み中...</span>
+                <div class="upload-loader"></div>
+                <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
