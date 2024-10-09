@@ -14,7 +14,7 @@
         textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
         button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
         button:hover { background-color: #45a049; }
-        button:disabled { background-color: #d3d3f3; cursor: not-allowed; }
+        button:disabled { background-color: #d3d3d3; cursor: not-allowed; }
         .center { display: block; margin-left: auto; margin-right: auto; }
         .image-preview { margin-top: 20px; text-align: center; }
         .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
@@ -70,6 +70,25 @@
             line-height: 30px;
             color: white;
             font-weight: bold;
+        }
+
+        /* ログ表示エリアのスタイル */
+        #logDisplayContainer {
+            margin-top: 30px;
+            font-size: 12px;
+            color: #333;
+            background-color: #f9f9f9;
+            border: 1px solid #ccc;
+            padding: 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            display: none; /* 折り畳み表示の初期状態 */
+        }
+
+        #logToggle {
+            cursor: pointer;
+            color: blue;
+            text-decoration: underline;
         }
     </style>
 </head>
@@ -160,6 +179,12 @@
         </div>
 
         <canvas id="canvas"></canvas>
+
+        <!-- ログ表示エリア -->
+        <div id="logToggle">処理ログを表示/非表示</div>
+        <div id="logDisplayContainer">
+            <pre id="logDisplay"></pre>
+        </div>
     </div>
 
     <script>
@@ -169,6 +194,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
+        let logMessages = [];  // ログメッセージ用
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -181,7 +207,27 @@
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';  // 進捗バーをリセット
+            logMessages = [];  // ログをリセット
+            updateLogDisplay();  // ログ表示をリセット
         }
+
+        function log(message) {
+            logMessages.push(message);
+            updateLogDisplay();
+        }
+
+        function updateLogDisplay() {
+            const logDisplay = document.getElementById('logDisplay');
+            logDisplay.textContent = logMessages.join('\n');
+        }
+
+        function toggleLogDisplay() {
+            const logContainer = document.getElementById('logDisplayContainer');
+            logContainer.style.display = (logContainer.style.display === 'none') ? 'block' : 'none';
+        }
+
+        // ログ表示のトグルイベント
+        document.getElementById('logToggle').addEventListener('click', toggleLogDisplay);
 
         function validateImageFile(file) {
             const validTypes = ['image/png', 'image/jpeg'];
@@ -198,22 +244,26 @@
 
         function displayProgress(message) {
             document.getElementById('progressDisplay').innerText = message;
+            log(message);  // メッセージをログにも記録
         }
 
         function displayError(message) {
             const errorDisplay = document.getElementById('errorDisplay');
             errorDisplay.innerText = message;
+            log("Error: " + message);  // エラーメッセージをログに記録
         }
 
         function displayDiff(diffMessage) {
             const diffDisplay = document.getElementById('diffDisplay');
             diffDisplay.innerHTML = diffMessage;
             diffDisplay.style.display = 'block';
+            log("差分: " + diffMessage);  // 差分をログに記録
         }
 
         function displaySizeDifference(difference) {
             const sizeDifference = document.getElementById('sizeDifference');
             sizeDifference.innerText = `ファイルサイズの差: ${difference}%`;
+            log(`ファイルサイズの差: ${difference}%`);  // ファイルサイズの差をログに記録
         }
 
         function updateProgressBar(percent) {
@@ -221,6 +271,7 @@
             const progressBarText = document.getElementById('progressBarText');
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
+            log(`進捗状況: ${percent}%`);  // 進捗状況をログに記録
         }
 
         function formatBytes(bytes) {
@@ -239,19 +290,7 @@
             const fileType = file.type || '不明';
 
             document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
-        }
-
-        function checkTextSize() {
-            const text = document.getElementById('textInput').value;
-            const textLength = new TextEncoder().encode(text).length; 
-            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
-            
-            if (textLength > maxDataBytes) {
-                document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
-            } else {
-                document.getElementById('embedTextCount').classList.remove('warning');
-            }
+            log(`ファイル詳細: ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`);  // ファイル情報をログに記録
         }
 
         function handleImageUpload(file) {
@@ -278,130 +317,12 @@
                     
                     document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
                     isImageUploaded = true;
+
+                    log(`画像がアップロードされました。画像サイズ: ${img.width} x ${img.height}, 最大容量: ${formatBytes(maxDataBytes)}`);  // ログに記録
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
-        }
-
-        function handleExtractImageUpload(file) {
-            document.getElementById('extractPreviewImage').src = '';
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.getElementById('canvas');
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                    document.getElementById('extractPreviewImage').src = event.target.result;
-                    document.getElementById('extractImagePreview').style.display = 'block';
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
-        const dropArea = document.getElementById('dropArea');
-        dropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            dropArea.classList.add('dragging');
-        });
-        dropArea.addEventListener('dragleave', () => {
-            dropArea.classList.remove('dragging');
-        });
-        dropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            dropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-                uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-                document.getElementById('embedImageInput').files = e.dataTransfer.files;
-            }
-        });
-
-        const fileDropArea = document.getElementById('fileDropArea');
-        fileDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            fileDropArea.classList.add('dragging');
-        });
-        fileDropArea.addEventListener('dragleave', () => {
-            fileDropArea.classList.remove('dragging');
-        });
-        fileDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            fileDropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            displayFileDetails(file); 
-            isFileUploaded = true;
-            document.getElementById('fileInput').files = e.dataTransfer.files;
-            resetUI();
-        });
-
-        const extractDropArea = document.getElementById('extractDropArea');
-        extractDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.add('dragging');
-        });
-        extractDropArea.addEventListener('dragleave', () => {
-            extractDropArea.classList.remove('dragging');
-        });
-        extractDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
-                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
-                document.getElementById('extractImageInput').files = e.dataTransfer.files;
-            }
-        });
-
-        document.getElementById('embedImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-                uploadedFileName = file.name;
-                document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-            }
-        });
-
-        document.getElementById('extractImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
-            }
-        });
-
-        document.getElementById('fileInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            displayFileDetails(file); 
-            isFileUploaded = true;
-            resetUI();
-        });
-
-        function checkFileSize(fileSize) {
-            if (fileSize > maxDataBytes) {
-                displayFileSizeWarning(fileSize);
-                return false;
-            }
-            return true;
-        }
-
-        function toggleInput() {
-            const embedOption = document.getElementById('embedOption').value;
-            if (embedOption === 'file') {
-                document.getElementById('fileInputContainer').style.display = 'block';
-                document.getElementById('textInputContainer').style.display = 'none';
-            } else {
-                document.getElementById('fileInputContainer').style.display = 'none';
-                document.getElementById('textInputContainer').style.display = 'block';
-            }
         }
 
         function embedData() {
@@ -412,6 +333,7 @@
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
+                log("エラー: 画像がアップロードされていません");  // ログに記録
                 return;
             }
 
@@ -429,6 +351,7 @@
             } else {
                 if (!isFileUploaded) {
                     alert("ファイルがアップロードされていません。");
+                    log("エラー: ファイルがアップロードされていません");  // ログに記録
                     return;
                 }
 
@@ -625,14 +548,6 @@
             }
 
             return new Uint8Array(binaryData);
-        }
-
-        function arraysEqual(a, b) {
-            if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; i++) {
-                if (a[i] !== b[i]) return false;
-            }
-            return true;
         }
 
         function calculateDiff(original, extracted) {
