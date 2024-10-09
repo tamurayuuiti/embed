@@ -41,6 +41,36 @@
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
+
+        /* 進行状況バーのスタイル */
+        #progressBarContainer {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+            height: 30px;
+            position: relative;
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        #progressBarText {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -78,6 +108,12 @@
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
                 <div class="loader"></div>
+            </div>
+
+            <div id="progressBarContainer" style="display:none;">
+                <div id="progressBar">
+                    <span id="progressBarText">0%</span>
+                </div>
             </div>
 
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
@@ -144,6 +180,7 @@
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
+            document.getElementById('progressBarContainer').style.display = 'none';  // 進捗バーをリセット
         }
 
         function validateImageFile(file) {
@@ -177,6 +214,13 @@
         function displaySizeDifference(difference) {
             const sizeDifference = document.getElementById('sizeDifference');
             sizeDifference.innerText = `ファイルサイズの差: ${difference}%`;
+        }
+
+        function updateProgressBar(percent) {
+            const progressBar = document.getElementById('progressBar');
+            const progressBarText = document.getElementById('progressBarText');
+            progressBar.style.width = percent + '%';
+            progressBarText.textContent = percent + '%';
         }
 
         function formatBytes(bytes) {
@@ -373,6 +417,7 @@
 
             document.getElementById('loadingIndicator').style.display = 'block';
             displayProgress('ファイルサイズチェック中...');
+            document.getElementById('progressBarContainer').style.display = 'block';  // 進捗バーを表示
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
@@ -503,8 +548,8 @@
                     }
                 }
 
-                // 進捗表示の更新
-                displayProgress(`ファイル埋め込み中... ${Math.round((startIndex / binaryData.length) * 100)}% 完了`);
+                const progress = Math.round((startIndex / binaryData.length) * 100);
+                updateProgressBar(progress);
 
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0); // 次のチャンクを非同期で処理
             }
