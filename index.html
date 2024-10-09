@@ -41,10 +41,14 @@
         /* 進行状況メッセージのスタイル */
         #progressDisplay {
             font-size: 16px;
-            color: black;
+            color: #333;
             display: block;
-            margin-top: 10px;
-            text-align: center; /* メッセージを中央に配置 */
+            margin-bottom: 10px;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
         }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
@@ -119,6 +123,8 @@
                 <div class="loader"></div>
             </div>
 
+            <div id="progressDisplay"></div>  <!-- メッセージを表示するための要素 -->
+
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
@@ -139,7 +145,6 @@
                 </div>
             </div>
 
-            <div id="progressDisplay"></div>  <!-- メッセージを表示するための要素 -->
             <div id="sizeDifference"></div>
             <div id="errorDisplay"></div>
             <div id="diffDisplay"></div>
