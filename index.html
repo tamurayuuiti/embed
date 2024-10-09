@@ -437,7 +437,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('データ埋め込み中...');
+            displayProgress('ファイル埋め込み中...');
             document.getElementById('progressBarContainer').style.display = 'block';  // 進捗バーを表示
 
             if (embedOption === 'text') {
@@ -463,9 +463,9 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    displayProgress('ファイル確認中...');
+                    displayProgress('ファイル抽出中...');
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
-                    displayProgress('ファイル埋め込み中...');
+                    displayProgress('ファイルサイズチェック中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -473,9 +473,9 @@
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            displayProgress('ファイル確認中...');
+            displayProgress('ファイル抽出中...');
             const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
-            displayProgress('ファイル埋め込み中...');
+            displayProgress('ファイルサイズチェック中...');
             embedBinaryData(parityData, dataType, fileExtension); 
         }
 
@@ -579,19 +579,18 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
-            displayProgress('データ抽出中...');
+            displayProgress('ファイル抽出中...');
             const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
-            displayProgress('データサイズチェック中...');
+            displayProgress('ファイルサイズチェック中...');
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
             const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
             
             if (sizeDifference <= 3) {
-                displayProgress('ファイルサイズチェック完了');
+                displayProgress('ファイル埋め込み完了');
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
-                displayProgress('データの埋め込みが正常に完了しました');
             } else {
                 displayProgress('データエラーチェック中...');
                 displaySizeDifference(sizeDifference.toFixed(2));
