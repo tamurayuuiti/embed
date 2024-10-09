@@ -503,6 +503,9 @@
                     }
                 }
 
+                // 進捗表示の更新
+                displayProgress(`ファイル埋め込み中... ${Math.round((startIndex / binaryData.length) * 100)}% 完了`);
+
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0); // 次のチャンクを非同期で処理
             }
 
