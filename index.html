@@ -83,7 +83,7 @@
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <div id="uploadIndicator">
-                <div class="upload-loader"></div><span id="progressDisplay">埋め込み中...</span>
+                <div class="upload-loader"></div><span id="progressDisplay">データ埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
             <select id="embedOption" onchange="toggleInput()">
@@ -416,7 +416,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('ファイルサイズチェック中...');
+            displayProgress('データ埋め込み中...');
             document.getElementById('progressBarContainer').style.display = 'block';  // 進捗バーを表示
 
             if (embedOption === 'text') {
@@ -442,9 +442,8 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;  // 元データを保存
-                    displayProgress('ファイル確認中...');
+                    displayProgress('データ埋め込み中...');
                     const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
-                    displayProgress('ファイル埋め込み中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -452,9 +451,8 @@
             }
 
             originalBinaryData = binaryData;  // 元データを保存
-            displayProgress('ファイル確認中...');
+            displayProgress('データ埋め込み中...');
             const parityData = addErrorCheckingData(binaryData);  // エラーチェック用データの追加
-            displayProgress('ファイル埋め込み中...');
             embedBinaryData(parityData, dataType, fileExtension); 
         }
 
@@ -558,19 +556,20 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
+            displayProgress('データ抽出中...');
             const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
             const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
             
+            displayProgress('データサイズチェック中...');
             if (sizeDifference <= 3) {
-                displayProgress('ファイルサイズチェック中...');
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
                 displayProgress('データの埋め込みが正常に完了しました');
             } else {
-                displayProgress('ファイルサイズチェックに失敗しました');
+                displayProgress('データエラーチェック中...');
                 displaySizeDifference(sizeDifference.toFixed(2));
                 const diff = calculateDiff(originalBinaryData, extractedBinaryData);
                 displayDiff(diff);
