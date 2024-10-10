@@ -37,50 +37,36 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
-        
-        #progressDisplay {
-            font-size: 16px;
-            color: #333;
-            display: block;
-            margin-bottom: 10px;
-            text-align: center;
-            padding: 10px;
-            border: 2px solid #ccc;
-            border-radius: 8px;
-            background-color: #f9f9f9;
-        }
+        #progressDisplay { font-size: 16px; color: #333; display: block; margin-bottom: 10px; text-align: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
-
-        #progressBarContainer {
-            width: 100%;
-            background-color: #f3f3f3;
-            border: 1px solid #ccc;
-            border-radius: 5px;
-            margin-top: 10px;
-            height: 30px;
-            position: relative;
-            overflow: hidden;  /* 改善：バーが枠を超えないようにする */
+        /* 進行状況バーのスタイル改善 */
+        #progressBarContainer { 
+            width: 100%; 
+            background-color: #f3f3f3; 
+            border: 1px solid #ccc; 
+            border-radius: 8px; 
+            margin-top: 10px; 
+            height: 30px; 
+            position: relative; 
+            overflow: hidden;
         }
-
-        #progressBar {
-            height: 100%;
-            width: 0%;
-            background-color: #4CAF50;
-            border-radius: 5px;
-            transition: width 0.3s;
+        #progressBar { 
+            height: 100%; 
+            width: 0%; 
+            background: linear-gradient(to right, #4CAF50, #66bb6a); /* グラデーション追加 */
+            transition: width 0.3s ease-in-out; 
         }
-
-        #progressBarText {
-            position: absolute;
-            top: 0;
-            left: 50%;
-            transform: translateX(-50%);
-            font-size: 14px;
-            line-height: 30px;
-            color: white;
-            font-weight: bold;
+        #progressBarText { 
+            position: absolute; 
+            top: 0; 
+            left: 50%; 
+            transform: translateX(-50%); 
+            font-size: 14px; 
+            line-height: 30px; 
+            color: white; 
+            font-weight: bold; 
         }
     </style>
 </head>
@@ -183,7 +169,7 @@
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
-            document.getElementById('progressBarContainer').style.display = 'none';
+            document.getElementById('progressBarContainer').style.display = 'none';  
         }
 
         function validateImageFile(file) {
@@ -200,10 +186,11 @@
         }
 
         function displayProgress(message) {
+            console.log("Progress Message:", message);  
             const progressElement = document.getElementById('progressDisplay');
             if (progressElement) {
                 progressElement.innerText = message;
-                progressElement.style.display = 'block';  
+                progressElement.style.display = 'block'; 
             } else {
                 console.error('progressDisplay 要素が見つかりません');
             }
@@ -426,7 +413,7 @@
 
             document.getElementById('loadingIndicator').style.display = 'block';
             displayProgress('データ埋め込み中...');
-            document.getElementById('progressBarContainer').style.display = 'block'; 
+            document.getElementById('progressBarContainer').style.display = 'block';  
 
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
@@ -665,10 +652,22 @@
         }
 
         function extractData() {
-            displayProgress('ファイル抽出中...');
-            const binaryData = extractBinaryData();
-            displayProgress('データ抽出完了');
-            // 抽出されたデータの処理をここで行う
+            const file = document.getElementById('extractImageInput').files[0];
+            if (!file) {
+                alert("抽出用の画像が選択されていません。");
+                return;
+            }
+
+            document.getElementById('extractLoadingIndicator').style.display = 'block';
+            displayProgress('抽出中...');
+            
+            handleExtractImageUpload(file);
+
+            // 抽出後のインジケータ表示
+            setTimeout(() => {
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                displayProgress('データ抽出完了');
+            }, 3000); // 3秒後に完了メッセージ
         }
     </script>
 </body>
