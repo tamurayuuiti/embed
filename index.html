@@ -37,7 +37,6 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
-        #progressDisplay { font-size: 16px; color: #333; display: block; margin-bottom: 10px; text-align: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
@@ -82,7 +81,6 @@
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
-            <div id="progressDisplay"></div>
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
@@ -141,7 +139,6 @@
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('extractedFilePreview').innerHTML = '';
             document.getElementById('extractedData').innerText = '';
-            document.getElementById('progressDisplay').innerText = '埋め込み中...';
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
@@ -163,13 +160,6 @@
 
         function displayProgress(message) {
             console.log("Progress Message:", message);  
-            const progressElement = document.getElementById('progressDisplay');
-            if (progressElement) {
-                progressElement.innerText = message;
-                progressElement.style.display = 'block'; 
-            } else {
-                console.error('progressDisplay 要素が見つかりません');
-            }
         }
 
         function displayError(message) {
@@ -515,7 +505,7 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
+                        pixelIndex += 1;  
                     }
                 }
 
@@ -589,9 +579,24 @@
                 for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
-                    pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
+                    pixelIndex += 1;  
                 }
                 binaryData.push(parseInt(byte, 2));
+            }
+
+            // 抽出データのプレビュー
+            if (isFile) {
+                const fileBlob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+                const fileUrl = URL.createObjectURL(fileBlob);
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `extracted.${fileExtension}`;
+                link.click();
+                URL.revokeObjectURL(fileUrl);
+            } else {
+                const textDecoder = new TextDecoder();
+                const extractedText = textDecoder.decode(new Uint8Array(binaryData));
+                document.getElementById('extractedData').innerText = extractedText;
             }
 
             return new Uint8Array(binaryData);
