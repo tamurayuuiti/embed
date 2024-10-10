@@ -150,29 +150,6 @@
             <div id="diffDisplay"></div>
         </div>
 
-        <div class="section">
-            <h3>2. 画像から文字またはファイルを抽出</h3>
-            <div id="extractDropArea">
-                <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
-                <p>または</p>
-                <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
-            </div>
-            <p id="extractedFileName" class="info"></p>
-
-            <button id="extractButton" onclick="extractData()">データを抽出する</button>
-            <div id="extractLoadingIndicator">
-                <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
-            </div>
-
-            <div id="extractedFilePreview" class="file-preview"></div>
-            <p id="extractedData"></p>
-            <div id="extractImageDetails" class="details"></div>
-            <div class="image-preview" id="extractImagePreview" style="display:none;">
-                <p>アップロードした画像（抽出用）:</p>
-                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="image-preview-center" />
-            </div>
-        </div>
-
         <canvas id="canvas"></canvas>
     </div>
 
@@ -212,8 +189,12 @@
 
         function displayProgress(message) {
             const progressElement = document.getElementById('progressDisplay');
-            progressElement.innerText = message;
-            progressElement.style.display = 'block';  // 表示を強制
+            if (progressElement) {
+                progressElement.innerText = message;
+                progressElement.style.display = 'block';  // 表示を強制
+            } else {
+                console.error('progressDisplay 要素が見つかりません');
+            }
         }
 
         function displayError(message) {
@@ -300,27 +281,6 @@
             reader.readAsDataURL(file);
         }
 
-        function handleExtractImageUpload(file) {
-            document.getElementById('extractPreviewImage').src = '';
-            const reader = new FileReader();
-            reader.onload = function(event) {
-                const img = new Image();
-                img.onload = function() {
-                    const canvas = document.getElementById('canvas');
-                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
-                    canvas.width = img.width;
-                    canvas.height = img.height;
-                    ctx.drawImage(img, 0, 0);
-                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-
-                    document.getElementById('extractPreviewImage').src = event.target.result;
-                    document.getElementById('extractImagePreview').style.display = 'block';
-                };
-                img.src = event.target.result;
-            };
-            reader.readAsDataURL(file);
-        }
-
         const dropArea = document.getElementById('dropArea');
         dropArea.addEventListener('dragover', (e) => {
             e.preventDefault();
@@ -359,38 +319,12 @@
             resetUI();
         });
 
-        const extractDropArea = document.getElementById('extractDropArea');
-        extractDropArea.addEventListener('dragover', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.add('dragging');
-        });
-        extractDropArea.addEventListener('dragleave', () => {
-            extractDropArea.classList.remove('dragging');
-        });
-        extractDropArea.addEventListener('drop', (e) => {
-            e.preventDefault();
-            extractDropArea.classList.remove('dragging');
-            const file = e.dataTransfer.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
-                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
-                document.getElementById('extractImageInput').files = e.dataTransfer.files;
-            }
-        });
-
         document.getElementById('embedImageInput').addEventListener('change', function(e) {
             const file = e.target.files[0];
             if (validateImageFile(file)) {
                 handleImageUpload(file);
                 uploadedFileName = file.name;
                 document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-            }
-        });
-
-        document.getElementById('extractImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleExtractImageUpload(file);
             }
         });
 
@@ -594,9 +528,119 @@
             }
         }
 
-        function extractBinaryData() {
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; i < a.length; i++) {
+                if (a[i] !== b[i]) return false;
+            }
+            return true;
+        }
+
+        function calculateDiff(original, extracted) {
+            let diffMessage = '';
+            const length = Math.max(original.length, extracted.length);
+            for (let i = 0; i < length; i++) {
+                if (original[i] !== extracted[i]) {
+                    diffMessage += `位置 ${i}: 元データ ${original[i]} - 抽出データ ${extracted[i]}<br>`;
+                }
+            }
+            return diffMessage || 'データに違いはありません';
+        }
+
+        function downloadImage() {
+            const canvas = document.getElementById('canvas');
+            canvas.toBlob(function(blob) {
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(blob);
+                link.download = 'stego_image.png';
+                link.click();
+                URL.revokeObjectURL(link.href); 
+            });
+        }
+    </script>
+
+    <!-- プログラムの後半：ファイル抽出コード -->
+    <div class="section">
+        <h3>2. 画像から文字またはファイルを抽出</h3>
+        <div id="extractDropArea">
+            <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
+            <p>または</p>
+            <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+        </div>
+        <p id="extractedFileName" class="info"></p>
+
+        <button id="extractButton" onclick="extractData()">データを抽出する</button>
+        <div id="extractLoadingIndicator">
+            <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
+        </div>
+
+        <div id="extractedFilePreview" class="file-preview"></div>
+        <p id="extractedData"></p>
+        <div id="extractImageDetails" class="details"></div>
+        <div class="image-preview" id="extractImagePreview" style="display:none;">
+            <p>アップロードした画像（抽出用）:</p>
+            <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="image-preview-center" />
+        </div>
+    </div>
+
+    <script>
+        function handleExtractImageUpload(file) {
+            document.getElementById('extractPreviewImage').src = '';
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                const img = new Image();
+                img.onload = function() {
+                    const canvas = document.getElementById('canvas');
+                    const ctx = canvas.getContext('2d', { willReadFrequently: true });
+                    canvas.width = img.width;
+                    canvas.height = img.height;
+                    ctx.drawImage(img, 0, 0);
+                    imgData = ctx.getImageData(0, 0, canvas.width, canvas.height);
+
+                    document.getElementById('extractPreviewImage').src = event.target.result;
+                    document.getElementById('extractImagePreview').style.display = 'block';
+                };
+                img.src = event.target.result;
+            };
+            reader.readAsDataURL(file);
+        }
+
+        const extractDropArea = document.getElementById('extractDropArea');
+        extractDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.add('dragging');
+        });
+        extractDropArea.addEventListener('dragleave', () => {
+            extractDropArea.classList.remove('dragging');
+        });
+        extractDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            extractDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
+                document.getElementById('extractedFileName').innerText = `アップロードした画像: ${file.name}`;
+                document.getElementById('extractImageInput').files = e.dataTransfer.files;
+            }
+        });
+
+        document.getElementById('extractImageInput').addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (validateImageFile(file)) {
+                handleExtractImageUpload(file);
+            }
+        });
+
+        function extractData() {
+            if (!imgData) {
+                alert("抽出用の画像がアップロードされていません。");
+                return;
+            }
+
+            displayProgress('ファイル抽出中...');
+            document.getElementById('extractLoadingIndicator').style.display = 'block';
+
             let pixelIndex = 0;
-            let binaryData = [];
 
             const isFile = imgData.data[pixelIndex] & 1 ? true : false;
             pixelIndex += 4;
@@ -628,6 +672,7 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
+            let binaryData = [];
             for (let i = 0; dataLength > i; i++) {
                 let byte = '';
                 for (let j = 0; 8 > j; j++) {
@@ -638,37 +683,59 @@
                 binaryData.push(parseInt(byte, 2));
             }
 
-            return new Uint8Array(binaryData);
-        }
-
-        function arraysEqual(a, b) {
-            if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; i++) {
-                if (a[i] !== b[i]) return false;
+            if (binaryData.length === 0) {
+                alert("抽出に失敗しました。埋め込まれたデータがありません。");
+                document.getElementById('extractLoadingIndicator').style.display = 'none';
+                return;
             }
-            return true;
-        }
 
-        function calculateDiff(original, extracted) {
-            let diffMessage = '';
-            const length = Math.max(original.length, extracted.length);
-            for (let i = 0; i < length; i++) {
-                if (original[i] !== extracted[i]) {
-                    diffMessage += `位置 ${i}: 元データ ${original[i]} - 抽出データ ${extracted[i]}<br>`;
+            const extractedFilePreview = document.getElementById('extractedFilePreview');
+
+            if (!isFile) {
+                const decoder = new TextDecoder();
+                const extractedText = decoder.decode(new Uint8Array(binaryData));
+                
+                extractedFilePreview.innerHTML = `<pre id="textPreview">${extractedText.trim()}</pre>`;
+                document.getElementById('extractedData').innerText = `テキストサイズ: ${formatBytes(binaryData.length)}`;
+
+                const textBlob = new Blob([new Uint8Array(binaryData)], { type: 'text/plain' });
+                const link = document.createElement('a');
+                link.href = URL.createObjectURL(textBlob);
+                link.download = 'extracted_text.txt';
+                link.className = 'btn-uniform';
+                link.textContent = 'テキストファイルとしてダウンロード';
+                extractedFilePreview.appendChild(link);
+            } else {
+                const blob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+
+                document.getElementById('extractedData').innerText = `ファイル形式: ${fileExtension}\nファイルサイズ: ${formatBytes(binaryData.length)}`;
+
+                switch (fileExtension) {
+                    case 'png':
+                    case 'jpg':
+                    case 'jpeg':
+                    case 'gif':
+                        extractedFilePreview.innerHTML = `<img src="${URL.createObjectURL(blob)}" alt="プレビュー画像" style="max-width:100%;" class="center">`;
+                        break;
+                    case 'wav':
+                        extractedFilePreview.innerHTML = `<audio controls style="width:100%;" class="audio-preview"><source src="${URL.createObjectURL(blob)}" type="audio/wav">音声プレビュー非対応</audio>`;
+                        break;
+                    case 'pdf':
+                        extractedFilePreview.innerHTML = `<embed src="${URL.createObjectURL(blob)}" type="application/pdf" width="100%" height="500px" />`;
+                        break;
+                    default:
+                        extractedFilePreview.innerHTML = "プレビューできません（ファイルデータ）";
                 }
-            }
-            return diffMessage || 'データに違いはありません';
-        }
 
-        function downloadImage() {
-            const canvas = document.getElementById('canvas');
-            canvas.toBlob(function(blob) {
                 const link = document.createElement('a');
                 link.href = URL.createObjectURL(blob);
-                link.download = 'stego_image.png';
-                link.click();
-                URL.revokeObjectURL(link.href); 
-            });
+                link.download = `extracted_file.${fileExtension}`; 
+                link.className = 'btn-uniform';
+                link.textContent = `ファイルをダウンロード`;
+                extractedFilePreview.appendChild(link);
+            }
+
+            document.getElementById('extractLoadingIndicator').style.display = 'none';
         }
     </script>
 </body>
