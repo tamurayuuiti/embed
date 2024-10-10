@@ -37,13 +37,51 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
-        #progressDisplay { font-size: 16px; color: #333; display: block; margin-bottom: 10px; text-align: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
+        
+        #progressDisplay {
+            font-size: 16px;
+            color: #333;
+            display: block;
+            margin-bottom: 10px;
+            text-align: center;
+            padding: 10px;
+            border: 2px solid #ccc;
+            border-radius: 8px;
+            background-color: #f9f9f9;
+        }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
-        #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
-        #progressBar { height: 100%; width: 0%; background: linear-gradient(90deg, #4CAF50, #00FF00); border-radius: 5px; transition: width 0.3s; }
-        #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: white; font-weight: bold; }
+
+        #progressBarContainer {
+            width: 100%;
+            background-color: #f3f3f3;
+            border: 1px solid #ccc;
+            border-radius: 5px;
+            margin-top: 10px;
+            height: 30px;
+            position: relative;
+            overflow: hidden;  /* 改善：バーが枠を超えないようにする */
+        }
+
+        #progressBar {
+            height: 100%;
+            width: 0%;
+            background-color: #4CAF50;
+            border-radius: 5px;
+            transition: width 0.3s;
+        }
+
+        #progressBarText {
+            position: absolute;
+            top: 0;
+            left: 50%;
+            transform: translateX(-50%);
+            font-size: 14px;
+            line-height: 30px;
+            color: white;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -162,11 +200,10 @@
         }
 
         function displayProgress(message) {
-            console.log("Progress Message:", message);  // デバッグ用ログ（コンソール表示）
             const progressElement = document.getElementById('progressDisplay');
             if (progressElement) {
                 progressElement.innerText = message;
-                progressElement.style.display = 'block';  // 表示を強制
+                progressElement.style.display = 'block';  
             } else {
                 console.error('progressDisplay 要素が見つかりません');
             }
@@ -515,7 +552,7 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;
+                        pixelIndex += 1;  
                     }
                 }
 
@@ -589,7 +626,7 @@
                 for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
-                    pixelIndex += 1;
+                    pixelIndex += 1;  
                 }
                 binaryData.push(parseInt(byte, 2));
             }
@@ -625,6 +662,13 @@
                 link.click();
                 URL.revokeObjectURL(link.href); 
             });
+        }
+
+        function extractData() {
+            displayProgress('ファイル抽出中...');
+            const binaryData = extractBinaryData();
+            displayProgress('データ抽出完了');
+            // 抽出されたデータの処理をここで行う
         }
     </script>
 </body>
