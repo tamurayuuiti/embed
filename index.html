@@ -42,7 +42,7 @@
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
         #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
-        #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s; }
+        #progressBar { height: 100%; width: 0%; background: linear-gradient(90deg, #4CAF50, #00FF00); border-radius: 5px; transition: width 0.3s; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: white; font-weight: bold; }
     </style>
 </head>
@@ -162,11 +162,11 @@
         }
 
         function displayProgress(message) {
-            console.log("Progress Message:", message);  
+            console.log("Progress Message:", message);  // デバッグ用ログ（コンソール表示）
             const progressElement = document.getElementById('progressDisplay');
             if (progressElement) {
                 progressElement.innerText = message;
-                progressElement.style.display = 'block'; 
+                progressElement.style.display = 'block';  // 表示を強制
             } else {
                 console.error('progressDisplay 要素が見つかりません');
             }
@@ -515,7 +515,7 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
+                        pixelIndex += 1;
                     }
                 }
 
@@ -589,7 +589,7 @@
                 for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
-                    pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
+                    pixelIndex += 1;
                 }
                 binaryData.push(parseInt(byte, 2));
             }
