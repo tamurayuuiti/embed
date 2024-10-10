@@ -37,6 +37,7 @@
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #extractImagePreview { max-width: 100%; display: block; margin: 0 auto; }
+        #progressDisplay { font-size: 16px; color: #333; display: block; margin-bottom: 10px; text-align: center; padding: 10px; border: 2px solid #ccc; border-radius: 8px; background-color: #f9f9f9; }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
@@ -81,6 +82,7 @@
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
+            <div id="progressDisplay"></div>
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
@@ -112,7 +114,7 @@
             <p id="extractedFileName" class="info"></p>
             <button id="extractButton" onclick="extractData()">データを抽出する</button>
             <div id="extractLoadingIndicator">
-                <div class="extract-loader"></div><span id="extractProgressDisplay">データ抽出中...</span>
+                <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
             </div>
             <div id="extractedFilePreview" class="file-preview"></div>
             <p id="extractedData"></p>
@@ -139,6 +141,7 @@
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('extractedFilePreview').innerHTML = '';
             document.getElementById('extractedData').innerText = '';
+            document.getElementById('progressDisplay').innerText = '埋め込み中...';
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
@@ -156,6 +159,17 @@
                 return false;
             }
             return true;
+        }
+
+        function displayProgress(message) {
+            console.log("Progress Message:", message);  
+            const progressElement = document.getElementById('progressDisplay');
+            if (progressElement) {
+                progressElement.innerText = message;
+                progressElement.style.display = 'block'; 
+            } else {
+                console.error('progressDisplay 要素が見つかりません');
+            }
         }
 
         function displayError(message) {
@@ -374,6 +388,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
+            displayProgress('データ埋め込み中...');
             document.getElementById('progressBarContainer').style.display = 'block'; 
 
             if (embedOption === 'text') {
@@ -399,7 +414,9 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;
+                    displayProgress('データ抽出中...');
                     const parityData = addErrorCheckingData(binaryData);
+                    displayProgress('データサイズチェック中...');
                     embedBinaryData(parityData, dataType, fileExtension); 
                 };
                 reader.readAsArrayBuffer(file);
@@ -407,7 +424,9 @@
             }
 
             originalBinaryData = binaryData;
+            displayProgress('データ抽出中...');
             const parityData = addErrorCheckingData(binaryData);
+            displayProgress('データサイズチェック中...');
             embedBinaryData(parityData, dataType, fileExtension); 
         }
 
@@ -496,7 +515,7 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;  
+                        pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
                     }
                 }
 
@@ -510,41 +529,25 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
+            displayProgress('データ抽出中...');
             const extractedBinaryData = extractBinaryData();
+            displayProgress('データサイズチェック中...');
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
             const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
             
             if (sizeDifference <= 3) {
+                displayProgress('データ埋め込み完了');
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
             } else {
+                displayProgress('データエラーチェック中...');
                 displaySizeDifference(sizeDifference.toFixed(2));
                 const diff = calculateDiff(originalBinaryData, extractedBinaryData);
                 displayDiff(diff);
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
-        }
-
-        function extractData() {
-            const file = document.getElementById('extractImageInput').files[0];
-            if (!file) {
-                alert("抽出用の画像がアップロードされていません。");
-                return;
-            }
-
-            document.getElementById('extractLoadingIndicator').style.display = 'block';
-            setTimeout(() => {
-                const extractedBinaryData = extractBinaryData();
-                document.getElementById('extractLoadingIndicator').style.display = 'none';
-
-                if (extractedBinaryData) {
-                    document.getElementById('extractedData').innerText = `抽出されたデータ: ${new TextDecoder().decode(extractedBinaryData)}`;
-                } else {
-                    document.getElementById('extractedData').innerText = "抽出されたデータがありません。";
-                }
-            }, 1000); 
         }
 
         function extractBinaryData() {
@@ -586,7 +589,7 @@
                 for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
-                    pixelIndex += 1;  
+                    pixelIndex += 1;  // 変更: RGB全チャネルに埋め込むために+1ずつ
                 }
                 binaryData.push(parseInt(byte, 2));
             }
