@@ -87,7 +87,8 @@
 </head>
 <body>
     <div class="container">
-        <div class="section">
+        <!-- データ埋め込みセクション -->
+        <div class="section" id="embedSection">
             <h3>1. 画像に文字やファイルを埋め込む</h3>
             <div id="dropArea">
                 <p>ここに画像をドラッグ＆ドロップしてください</p>
@@ -150,6 +151,30 @@
             <div id="diffDisplay"></div>
         </div>
 
+        <!-- 抽出セクション -->
+        <div class="section" id="extractSection">
+            <h3>2. 画像から文字またはファイルを抽出</h3>
+            <div id="extractDropArea">
+                <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
+                <p>または</p>
+                <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
+            </div>
+            <p id="extractedFileName" class="info"></p>
+
+            <button id="extractButton" onclick="extractData()">データを抽出する</button>
+            <div id="extractLoadingIndicator">
+                <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
+            </div>
+
+            <div id="extractedFilePreview" class="file-preview"></div>
+            <p id="extractedData"></p>
+            <div id="extractImageDetails" class="details"></div>
+            <div class="image-preview" id="extractImagePreview" style="display:none;">
+                <p>アップロードした画像（抽出用）:</p>
+                <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="image-preview-center" />
+            </div>
+        </div>
+
         <canvas id="canvas"></canvas>
     </div>
 
@@ -188,6 +213,7 @@
         }
 
         function displayProgress(message) {
+            console.log("Progress Message:", message);  // コンソールにも表示
             const progressElement = document.getElementById('progressDisplay');
             if (progressElement) {
                 progressElement.innerText = message;
@@ -508,7 +534,7 @@
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('ファイル抽出中...');
-            const extractedBinaryData = extractBinaryData();  // 埋め込まれたデータを抽出
+            const extractedBinaryData = extractBinaryData(imgData);  // 埋め込まれたデータを抽出
             displayProgress('ファイルサイズチェック中...');
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
@@ -526,6 +552,53 @@
                 displayDiff(diff);
                 document.getElementById('loadingIndicator').style.display = 'none';
             }
+        }
+
+        function extractBinaryData(imageData) {
+            let pixelIndex = 0;
+            let binaryData = [];
+
+            const isFile = imageData.data[pixelIndex] & 1 ? true : false;
+            pixelIndex += 4;
+
+            let binaryLength = '';
+            for (let i = 0; i < 32; i++) {
+                const bit = imageData.data[pixelIndex] & 1;
+                binaryLength += bit;
+                pixelIndex += 4;
+            }
+            const dataLength = parseInt(binaryLength, 2);
+
+            let extLengthBinary = '';
+            for (let i = 0; 8 > i; i++) {
+                const bit = imageData.data[pixelIndex] & 1;
+                extLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const extLength = parseInt(extLengthBinary, 2);
+
+            let fileExtension = '';
+            for (let i = 0; i < extLength; i++) {
+                let charBinary = '';
+                for (let j = 0; 8 > j; j++) {
+                    const bit = imageData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            for (let i = 0; dataLength > i; i++) {
+                let byte = '';
+                for (let j = 0; 8 > j; j++) {
+                    const bit = imageData.data[pixelIndex] & 1;
+                    byte += bit;
+                    pixelIndex += 4;
+                }
+                binaryData.push(parseInt(byte, 2));
+            }
+
+            return new Uint8Array(binaryData);
         }
 
         function arraysEqual(a, b) {
@@ -557,33 +630,8 @@
                 URL.revokeObjectURL(link.href); 
             });
         }
-    </script>
 
-    <!-- プログラムの後半：ファイル抽出コード -->
-    <div class="section">
-        <h3>2. 画像から文字またはファイルを抽出</h3>
-        <div id="extractDropArea">
-            <p>ここに抽出用の画像をドラッグ＆ドロップしてください</p>
-            <p>または</p>
-            <input type="file" id="extractImageInput" accept="image/png, image/jpeg">
-        </div>
-        <p id="extractedFileName" class="info"></p>
-
-        <button id="extractButton" onclick="extractData()">データを抽出する</button>
-        <div id="extractLoadingIndicator">
-            <div class="extract-loader"></div><span id="extractProgressDisplay">ファイル抽出中...</span>
-        </div>
-
-        <div id="extractedFilePreview" class="file-preview"></div>
-        <p id="extractedData"></p>
-        <div id="extractImageDetails" class="details"></div>
-        <div class="image-preview" id="extractImagePreview" style="display:none;">
-            <p>アップロードした画像（抽出用）:</p>
-            <img id="extractPreviewImage" src="" alt="抽出用画像のプレビュー" class="image-preview-center" />
-        </div>
-    </div>
-
-    <script>
+        // 抽出関連のイベントと関数
         function handleExtractImageUpload(file) {
             document.getElementById('extractPreviewImage').src = '';
             const reader = new FileReader();
