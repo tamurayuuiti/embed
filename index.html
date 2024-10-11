@@ -158,8 +158,9 @@
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
 
+            // 100% になったら2秒後に画像プレビューとダウンロードボタンを表示
             if (percent === 100) {
-                displayImagePreviewAndDownload();
+                setTimeout(displayImagePreviewAndDownload, 2000);
             }
         }
 
@@ -447,7 +448,7 @@
                     }
                 }
 
-                const progress = Math.round((startIndex / binaryData.length) * 50);
+                const progress = Math.round((startIndex / binaryData.length) * 90);
                 updateProgressBar(progress);
 
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0);
@@ -459,12 +460,12 @@
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...');
 
-            updateProgressBar(50);
+            updateProgressBar(90);
 
             const extractedBinaryData = originalBinaryData; 
             displayProgress('データサイズチェック中...');
 
-            let progress = 50;
+            let progress = 90;
             const interval = setInterval(() => {
                 if (progress < 99) {
                     progress += 1;
@@ -544,7 +545,7 @@
                 }
 
                 // 進捗の計算
-                const progress = Math.round((currentIndex / (dataLength * 8)) * 49) + 50;
+                const progress = Math.round((currentIndex / (dataLength * 8)) * 9) + 90;
                 updateProgressBar(progress);
 
                 currentIndex += chunkSize;
