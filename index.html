@@ -37,8 +37,8 @@
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
         #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
-        #progressBar { height: 100%; width: 0%; background: linear-gradient(to right, #4CAF50, #2ECC71); border-radius: 5px; transition: width 0.3s ease; }
-        #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: #fff; font-weight: bold; text-shadow: 1px 1px 2px rgba(0, 0, 0, 0.5); }
+        #progressBar { height: 100%; width: 0%; background: linear-gradient(to right, #66ff66, #009900); border-radius: 5px; transition: width 0.3s ease; }
+        #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: white; font-weight: bold; }
     </style>
 </head>
 <body>
@@ -438,7 +438,7 @@
                     }
                 }
 
-                const progress = Math.round((startIndex / binaryData.length) * 80);
+                const progress = Math.round((startIndex / binaryData.length) * 50);
                 updateProgressBar(progress);
 
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0);
@@ -450,12 +450,12 @@
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...');
 
-            updateProgressBar(80);
+            updateProgressBar(50);
 
             const extractedBinaryData = originalBinaryData; 
             displayProgress('データサイズチェック中...');
 
-            let progress = 80;
+            let progress = 50;
             const interval = setInterval(() => {
                 if (progress < 99) {
                     progress += 1;
@@ -471,7 +471,7 @@
                 const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
 
                 if (sizeDifference <= 3) {
-                    updateProgressBar(100);  // 画像のプレビューとダウンロードボタンが表示される時に100%を表示
+                    updateProgressBar(100);
                     displayProgress('データ埋め込み完了');
                     document.getElementById('outputImagePreview').style.display = 'block';
                     document.getElementById('downloadButton').style.display = 'inline-block';
