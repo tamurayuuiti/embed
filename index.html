@@ -25,28 +25,30 @@
         .warning { color: red; }
         #dropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
         #dropArea.dragging { border-color: #4CAF50; }
+        #fileDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; }
+        #fileDropArea.dragging { border-color: #4CAF50; }
         #textPreview { max-width: 100%; white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
         #canvas { display: none; }
         #loadingIndicator { display: none; margin-top: 10px; }
         .loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
         #downloadButton { display: none; }
-        #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
-        #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s; }
-        #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: white; font-weight: bold; }
+        .image-preview-container { display: flex; flex-direction: column; }
+        .details { font-size: 14px; margin-top: 10px; color: #333; }
+        .image-preview-center { display: block; margin: 0 auto; text-align: center; }
     </style>
 </head>
 <body>
     <div class="container">
         <div class="section">
-            <h3>画像に文字やファイルを埋め込む</h3>
+            <h3>1. 画像にデータを埋め込む</h3>
             <div id="dropArea">
                 <p>ここに画像をドラッグ＆ドロップしてください</p>
                 <p>または</p>
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg">
             </div>
             <div id="uploadIndicator">
-                <div class="loader"></div>
+                <div class="upload-loader"></div>
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
@@ -65,29 +67,31 @@
                     <input type="file" id="fileInput" accept=".txt,.json,.csv,.png,.jpg,.jpeg,.gif,.pdf,.wav">
                 </div>
                 <p id="uploadedFileName" class="info"></p>
+                <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             </div>
             <p id="embedCapacityInfo" class="info"></p>
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
+            <div id="progressDisplay"></div>
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
                 </div>
             </div>
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
+            <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
-                    <p>アップロードした画像:</p>
-                    <img id="embedPreviewImage" src="" alt="画像のプレビュー" />
+                    <p>アップロードした画像（元画像）:</p>
+                    <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
                 </div>
                 <div class="image-preview" id="outputImagePreview" style="display:none;">
                     <p>データを埋め込んだ後の画像:</p>
                     <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
                 </div>
             </div>
-            <div id="errorDisplay"></div>
         </div>
         <canvas id="canvas"></canvas>
     </div>
@@ -95,25 +99,25 @@
     <script>
         let imgData = null;
         let maxDataBytes = 0;
-        let isImageUploaded = false;
+        let uploadedFileName = '';
+        let isImageUploaded = false; 
         let isFileUploaded = false;
-
-        // 【変更厳禁】データ埋め込みのルール
-        // データは画像のRGB全チャネルに対して、各ピクセルごとに1ビットずつ埋め込まれます。
-        // データサイズは画像のサイズによって制限されます (画像のピクセル数 x 3 / 8)。
-        // 埋め込むデータが最大容量を超えた場合、エラーメッセージを表示して処理を中止します。
+        let originalBinaryData = null;
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
             document.getElementById('downloadButton').style.display = 'none';
             document.getElementById('embedTextCount').innerText = '';
-            document.getElementById('errorDisplay').innerText = '';
-            document.getElementById('progressBarContainer').style.display = 'none';
+            document.getElementById('progressDisplay').innerText = '埋め込み中...';
         }
 
         function validateImageFile(file) {
             const validTypes = ['image/png', 'image/jpeg'];
-            if (!validTypes.includes(file.type)) {
+            const validExtensions = ['png', 'jpg', 'jpeg'];
+            const fileType = file.type;
+            const fileExtension = file.name.split('.').pop().toLowerCase();
+
+            if (!validTypes.includes(fileType) || !validExtensions.includes(fileExtension)) {
                 alert("対応していないファイル形式です。PNGまたはJPEG形式の画像を選択してください。");
                 return false;
             }
@@ -121,11 +125,9 @@
         }
 
         function displayProgress(message) {
-            console.log("Progress:", message);
-        }
-
-        function displayError(message) {
-            document.getElementById('errorDisplay').innerText = message;
+            const progressElement = document.getElementById('progressDisplay');
+            progressElement.innerText = message;
+            progressElement.style.display = 'block'; 
         }
 
         function updateProgressBar(percent) {
@@ -136,9 +138,13 @@
         }
 
         function formatBytes(bytes) {
-            if (bytes >= 1048576) return (bytes / 1048576).toFixed(2) + ' MB';
-            if (bytes >= 1024) return (bytes / 1024).toFixed(2) + ' KB';
-            return bytes + ' バイト';
+            if (bytes >= 1048576) {
+                return (bytes / 1048576).toFixed(2) + ' MB';
+            } else if (bytes >= 1024) {
+                return (bytes / 1024).toFixed(2) + ' KB';
+            } else {
+                return bytes + ' バイト';
+            }
         }
 
         function handleImageUpload(file) {
@@ -158,8 +164,11 @@
                     document.getElementById('embedImagePreview').style.display = 'block';
 
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 1024;
-                    document.getElementById('embedCapacityInfo').innerText = `最大埋め込み容量: ${formatBytes(maxDataBytes)}`;
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 1024; 
+                    document.getElementById('embedImageDetails').innerText = 
+                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
+                    
+                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
                     isImageUploaded = true;
                 };
                 img.src = event.target.result;
@@ -168,6 +177,10 @@
         }
 
         function embedData() {
+            let binaryData;
+            let dataType;
+            let fileExtension = '';
+
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
                 return;
@@ -177,35 +190,54 @@
             displayProgress('データ埋め込み中...');
 
             const text = document.getElementById('textInput').value;
-            const binaryData = new TextEncoder().encode(text);
-            const dataSize = binaryData.length;
+            binaryData = new TextEncoder().encode(text);
+            dataType = 'text';
 
-            if (dataSize > maxDataBytes) {
-                displayError(`データが大きすぎます (最大: ${formatBytes(maxDataBytes)})`);
-                return;
+            originalBinaryData = binaryData;
+
+            embedBinaryData(binaryData, dataType, fileExtension); 
+        }
+
+        function embedBinaryData(binaryData, dataType, fileExtension) {
+            let pixelIndex = 0;
+
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
+            pixelIndex += 4;
+
+            const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
+            for (let i = 0; i < dataLengthBinary.length; i++) {
+                const bit = parseInt(dataLengthBinary[i]);
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
+                pixelIndex += 4;
             }
 
-            let pixelIndex = 0;
-            for (let i = 0; i < binaryData.length; i++) {
-                const byte = binaryData[i];
-                for (let bitIndex = 0; bitIndex < 8; bitIndex++) {
-                    const bit = (byte >> (7 - bitIndex)) & 1;
-                    for (let channel = 0; channel < 3; channel++) {
-                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
-                        pixelIndex++;
+            const embedChunkSize = 1000; 
+            function embedChunks(startIndex) {
+                if (startIndex >= binaryData.length) {
+                    const ctx = document.getElementById('canvas').getContext('2d');
+                    ctx.putImageData(imgData, 0, 0);
+                    const dataUrl = canvas.toDataURL();
+                    document.getElementById('outputPreviewImage').src = dataUrl;
+                    document.getElementById('downloadButton').style.display = 'block';
+                    document.getElementById('loadingIndicator').style.display = 'none';
+                    return;
+                }
+
+                for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
+                    const byte = binaryData[i].toString(2).padStart(8, '0');
+                    for (let bit of byte) {
+                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                        pixelIndex += 1;  
                     }
                 }
+
+                const progress = Math.round((startIndex / binaryData.length) * 100);
+                updateProgressBar(progress);
+
+                setTimeout(() => embedChunks(startIndex + embedChunkSize), 0);
             }
 
-            const ctx = document.getElementById('canvas').getContext('2d');
-            ctx.putImageData(imgData, 0, 0);
-            const dataUrl = canvas.toDataURL();
-            document.getElementById('outputPreviewImage').src = dataUrl;
-            document.getElementById('outputImagePreview').style.display = 'block';
-            document.getElementById('downloadButton').style.display = 'block';
-            document.getElementById('loadingIndicator').style.display = 'none';
-
-            displayProgress('データ埋め込み完了');
+            embedChunks(0); 
         }
 
         function downloadImage() {
@@ -215,20 +247,9 @@
                 link.href = URL.createObjectURL(blob);
                 link.download = 'stego_image.png';
                 link.click();
-                URL.revokeObjectURL(link.href);
+                URL.revokeObjectURL(link.href); 
             });
         }
-
-        document.getElementById('embedImageInput').addEventListener('change', function(e) {
-            const file = e.target.files[0];
-            if (validateImageFile(file)) {
-                handleImageUpload(file);
-            }
-        });
-
-        document.getElementById('embedButton').addEventListener('click', function() {
-            embedData();
-        });
     </script>
 </body>
 </html>
