@@ -32,13 +32,13 @@
         #loadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
         .loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
         @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
-        #downloadButton { display: none; }
+        #downloadButton { display: none; margin-left: 10px; }
         .audio-preview { margin-bottom: 20px; }
         .image-preview-center { display: block; margin: 0 auto; text-align: center; }
         #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
         #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
         #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
-        #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
+        #progressBarContainer { width: 100%; background-color: #e0e0e0; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; overflow: hidden; }
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: white; font-weight: bold; }
     </style>
@@ -76,6 +76,7 @@
             </div>
             <p id="embedCapacityInfo" class="info"></p>
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
+            <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="loadingIndicator">
                 <div class="loader"></div>
             </div>
@@ -84,7 +85,6 @@
                     <span id="progressBarText">0%</span>
                 </div>
             </div>
-            <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
@@ -333,6 +333,7 @@
                     dataType = determineFileType(file.type); 
                     fileExtension = file.name.split('.').pop(); 
                     originalBinaryData = binaryData;
+                    updateProgressBar(70); // 埋め込み完了後は70%まで進捗
                     displayProgress('データ抽出中...');
                     const parityData = addErrorCheckingData(binaryData);
                     displayProgress('データサイズチェック中...');
@@ -343,6 +344,7 @@
             }
 
             originalBinaryData = binaryData;
+            updateProgressBar(70); // 埋め込み完了後は70%まで進捗
             displayProgress('データ抽出中...');
             const parityData = addErrorCheckingData(binaryData);
             displayProgress('データサイズチェック中...');
@@ -426,6 +428,7 @@
                     ctx.putImageData(imgData, 0, 0);
                     const dataUrl = canvas.toDataURL();
                     document.getElementById('outputPreviewImage').src = dataUrl;
+                    updateProgressBar(95); // 抽出完了後は95%まで進捗
                     verifyEmbeddedData(binaryData, dataType, fileExtension);
                     return;
                 }
@@ -438,7 +441,7 @@
                     }
                 }
 
-                const progress = Math.round((startIndex / binaryData.length) * 100);
+                const progress = Math.round((startIndex / binaryData.length) * 100 * 0.7);
                 updateProgressBar(progress);
 
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0);
@@ -460,12 +463,14 @@
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'block';
                 document.getElementById('loadingIndicator').style.display = 'none';
+                updateProgressBar(100); // 埋め込み完了後100%
             } else {
                 displayProgress('データエラーチェック中...');
                 displaySizeDifference(sizeDifference.toFixed(2));
                 const diff = calculateDiff(originalBinaryData, extractedBinaryData);
                 displayDiff(diff);
                 document.getElementById('loadingIndicator').style.display = 'none';
+                displayError('データ埋め込みに失敗しました。');
             }
         }
 
