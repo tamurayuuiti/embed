@@ -447,90 +447,23 @@
             embedChunks(0); 
         }
 
-        function extractBinaryData() {
-    let pixelIndex = 0;
-    let binaryData = [];
-    const isFile = imgData.data[pixelIndex] & 1 ? true : false;
-    pixelIndex += 4;
+        function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
+            displayProgress('データ抽出中...');
 
-    let binaryLength = '';
-    for (let i = 0; i < 32; i++) {
-        const bit = imgData.data[pixelIndex] & 1;
-        binaryLength += bit;
-        pixelIndex += 4;
-    }
-    const dataLength = parseInt(binaryLength, 2);
+            updateProgressBar(50);
 
-    let extLengthBinary = '';
-    for (let i = 0; i < 8; i++) {
-        const bit = imgData.data[pixelIndex] & 1;
-        extLengthBinary += bit;
-        pixelIndex += 4;
-    }
-    const extLength = parseInt(extLengthBinary, 2);
+            const extractedBinaryData = originalBinaryData; 
+            displayProgress('データサイズチェック中...');
 
-    let fileExtension = '';
-    for (let i = 0; i < extLength; i++) {
-        let charBinary = '';
-        for (let j = 0; j < 8; j++) {
-            const bit = imgData.data[pixelIndex] & 1;
-            charBinary += bit;
-            pixelIndex += 4;
-        }
-        fileExtension += String.fromCharCode(parseInt(charBinary, 2));
-    }
-
-    const chunkSize = 1000;  // データを抽出するチャンクサイズ
-    let currentIndex = 0;
-
-    function extractChunk() {
-        for (let i = currentIndex; i < Math.min(currentIndex + chunkSize, dataLength); i++) {
-            let byte = '';
-            for (let j = 0; j < 8; j++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                byte += bit;
-                pixelIndex += 1;
-            }
-            binaryData.push(parseInt(byte, 2));
-        }
-
-        // 進捗の計算
-        const progress = Math.round((currentIndex / dataLength) * 49) + 50;
-        updateProgressBar(progress);
-
-        currentIndex += chunkSize;
-
-        if (currentIndex < dataLength) {
-            // 次のチャンクを非同期で処理
-            setTimeout(extractChunk, 0);
-        } else {
-            // 抽出処理が完了した場合の処理
-            finalizeExtraction(binaryData, isFile, fileExtension);
-        }
-    }
-
-    // チャンクの抽出を開始
-    extractChunk();
-}
-
-function finalizeExtraction(binaryData, isFile, fileExtension) {
-    if (isFile) {
-        const fileBlob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
-        const fileUrl = URL.createObjectURL(fileBlob);
-        const link = document.createElement('a');
-        link.href = fileUrl;
-        link.download = `extracted.${fileExtension}`;
-        link.click();
-        URL.revokeObjectURL(fileUrl);
-    } else {
-        const textDecoder = new TextDecoder();
-        const extractedText = textDecoder.decode(new Uint8Array(binaryData));
-        document.getElementById('extractedData').innerText = extractedText;
-    }
-
-    // 最後に進捗を100%に
-    updateProgressBar(100);
-}
+            let progress = 50;
+            const interval = setInterval(() => {
+                if (progress < 99) {
+                    progress += 1;
+                    updateProgressBar(progress);
+                } else {
+                    clearInterval(interval);
+                }
+            }, 100);
 
             setTimeout(() => {
                 const originalLength = originalBinaryData.length;
@@ -552,6 +485,91 @@ function finalizeExtraction(binaryData, isFile, fileExtension) {
                     displayError("データの埋め込みに失敗しました。");
                 }
             }, 3000);
+        }
+
+        function extractBinaryData() {
+            let pixelIndex = 0;
+            let binaryData = [];
+            const isFile = imgData.data[pixelIndex] & 1 ? true : false;
+            pixelIndex += 4;
+
+            let binaryLength = '';
+            for (let i = 0; i < 32; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                binaryLength += bit;
+                pixelIndex += 4;
+            }
+            const dataLength = parseInt(binaryLength, 2);
+
+            let extLengthBinary = '';
+            for (let i = 0; i < 8; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                extLengthBinary += bit;
+                pixelIndex += 4;
+            }
+            const extLength = parseInt(extLengthBinary, 2);
+
+            let fileExtension = '';
+            for (let i = 0; i < extLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 4;
+                }
+                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            const chunkSize = 1000;  // データを抽出するチャンクサイズ
+            let currentIndex = 0;
+
+            function extractChunk() {
+                for (let i = currentIndex; i < Math.min(currentIndex + chunkSize, dataLength); i++) {
+                    let byte = '';
+                    for (let j = 0; j < 8; j++) {
+                        const bit = imgData.data[pixelIndex] & 1;
+                        byte += bit;
+                        pixelIndex += 1;
+                    }
+                    binaryData.push(parseInt(byte, 2));
+                }
+
+                // 進捗の計算
+                const progress = Math.round((currentIndex / dataLength) * 49) + 50;
+                updateProgressBar(progress);
+
+                currentIndex += chunkSize;
+
+                if (currentIndex < dataLength) {
+                    // 次のチャンクを非同期で処理
+                    setTimeout(extractChunk, 0);
+                } else {
+                    // 抽出処理が完了した場合の処理
+                    finalizeExtraction(binaryData, isFile, fileExtension);
+                }
+            }
+
+            // チャンクの抽出を開始
+            extractChunk();
+        }
+
+        function finalizeExtraction(binaryData, isFile, fileExtension) {
+            if (isFile) {
+                const fileBlob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
+                const fileUrl = URL.createObjectURL(fileBlob);
+                const link = document.createElement('a');
+                link.href = fileUrl;
+                link.download = `extracted.${fileExtension}`;
+                link.click();
+                URL.revokeObjectURL(fileUrl);
+            } else {
+                const textDecoder = new TextDecoder();
+                const extractedText = textDecoder.decode(new Uint8Array(binaryData));
+                document.getElementById('extractedData').innerText = extractedText;
+            }
+
+            // 最後に進捗を100%に
+            updateProgressBar(100);
         }
 
         function arraysEqual(a, b) {
