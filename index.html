@@ -111,6 +111,7 @@
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
+            document.getElementById('outputImagePreview').style.display = 'none';  // 完全に削除
             document.getElementById('downloadButton').style.display = 'none';
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('errorDisplay').innerText = '';
@@ -158,9 +159,9 @@
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
 
-            // 100% になったら2秒後に画像プレビューとダウンロードボタンを表示
+            // 100% になったら1.5秒後に画像プレビューとダウンロードボタンを表示
             if (percent === 100) {
-                setTimeout(displayImagePreviewAndDownload, 2000);
+                setTimeout(displayImagePreviewAndDownload, 1500);
             }
         }
 
@@ -314,6 +315,16 @@
                 return;
             }
 
+            if (embedOption === 'text' && !document.getElementById('textInput').value.trim()) {
+                alert("隠したい文字が入力されていません。");
+                return;
+            }
+
+            if (embedOption === 'file' && !isFileUploaded) {
+                alert("ファイルがアップロードされていません。");
+                return;
+            }
+
             document.getElementById('loadingIndicator').style.display = 'block';
             displayProgress('データ埋め込み中...');
             document.getElementById('progressBarContainer').style.display = 'block'; 
@@ -328,11 +339,6 @@
                 binaryData = new TextEncoder().encode(text); 
                 dataType = 'text'; 
             } else {
-                if (!isFileUploaded) {
-                    alert("ファイルがアップロードされていません。");
-                    return;
-                }
-
                 const file = document.getElementById('fileInput').files[0];
                 const fileSize = file.size;
                 if (!checkFileSize(fileSize)) return;
@@ -528,7 +534,7 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            const chunkSize = 1000;  // データを抽出するチャンクサイズではなく、1000ピクセルごとに
+            const chunkSize = 1000;  
             let currentIndex = 0;
 
             function extractChunk() {
@@ -544,22 +550,18 @@
                     binaryData.push(parseInt(byte, 2));
                 }
 
-                // 進捗の計算
                 const progress = Math.round((currentIndex / (dataLength * 8)) * 9) + 90;
                 updateProgressBar(progress);
 
                 currentIndex += chunkSize;
 
                 if (currentIndex < dataLength * 8) {
-                    // 次のチャンクを非同期で処理
                     setTimeout(extractChunk, 0);
                 } else {
-                    // 抽出処理が完了した場合の処理
                     finalizeExtraction(binaryData, isFile, fileExtension);
                 }
             }
 
-            // チャンクの抽出を開始
             extractChunk();
         }
 
@@ -578,7 +580,6 @@
                 document.getElementById('extractedData').innerText = extractedText;
             }
 
-            // 最後に進捗を100%に
             updateProgressBar(100);
         }
 
