@@ -520,11 +520,13 @@
                 fileExtension += String.fromCharCode(parseInt(charBinary, 2));
             }
 
-            const chunkSize = 1000;  // データを抽出するチャンクサイズ
+            const chunkSize = 1000;  // データを抽出するチャンクサイズではなく、1000ピクセルごとに
             let currentIndex = 0;
 
             function extractChunk() {
-                for (let i = currentIndex; i < Math.min(currentIndex + chunkSize, dataLength); i++) {
+                const pixelEnd = Math.min(currentIndex + chunkSize, dataLength * 8);
+
+                for (let i = currentIndex; i < pixelEnd; i++) {
                     let byte = '';
                     for (let j = 0; j < 8; j++) {
                         const bit = imgData.data[pixelIndex] & 1;
@@ -535,12 +537,12 @@
                 }
 
                 // 進捗の計算
-                const progress = Math.round((currentIndex / dataLength) * 49) + 50;
+                const progress = Math.round((currentIndex / (dataLength * 8)) * 49) + 50;
                 updateProgressBar(progress);
 
                 currentIndex += chunkSize;
 
-                if (currentIndex < dataLength) {
+                if (currentIndex < dataLength * 8) {
                     // 次のチャンクを非同期で処理
                     setTimeout(extractChunk, 0);
                 } else {
