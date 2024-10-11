@@ -157,6 +157,15 @@
             const progressBarText = document.getElementById('progressBarText');
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
+
+            if (percent === 100) {
+                displayImagePreviewAndDownload();
+            }
+        }
+
+        function displayImagePreviewAndDownload() {
+            document.getElementById('outputImagePreview').style.display = 'block';
+            document.getElementById('downloadButton').style.display = 'inline-block';
         }
 
         function formatBytes(bytes) {
@@ -473,8 +482,6 @@
                 if (sizeDifference <= 3) {
                     updateProgressBar(100);
                     displayProgress('データ埋め込み完了');
-                    document.getElementById('outputImagePreview').style.display = 'block';
-                    document.getElementById('downloadButton').style.display = 'inline-block';
                     document.getElementById('loadingIndicator').style.display = 'none';
                 } else {
                     displayProgress('データエラーチェック中...');
