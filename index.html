@@ -71,6 +71,10 @@
                 <option value="text">文字を埋め込む</option>
                 <option value="file">ファイルを埋め込む</option>
             </select>
+            <select id="embedMode" onchange="updateCapacity()">
+                <option value="high_quality">高品質モード</option>
+                <option value="high_capacity">高容量モード</option>
+            </select>
             <div id="textInputContainer">
                 <textarea id="textInput" placeholder="文字を入力" oninput="checkTextSize()"></textarea>
                 <p id="embedTextCount" class="info"></p>
@@ -120,6 +124,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
+        let embedMode = 'high_quality';  // 初期モード: 高品質モード
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -228,18 +233,26 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
-                    const fileSizeKB = (file.size / 1024).toFixed(2);
-                    const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 100;  // ピクセル数から100バイトを差し引いた容量
-                    document.getElementById('embedImageDetails').innerText = 
-                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
-                    
-                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
+                    updateCapacity();  // 容量を更新
+
                     isImageUploaded = true;
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function updateCapacity() {
+            const pixelCount = imgData.width * imgData.height;
+            embedMode = document.getElementById('embedMode').value;
+
+            if (embedMode === 'high_quality') {
+                maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
+            } else {
+                maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
+            }
+
+            document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
         }
 
         const dropArea = document.getElementById('dropArea');
@@ -422,7 +435,8 @@
         function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
 
-            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | (dataType === 'text' ? 0 : 1);
+            const embedModeBinary = embedMode === 'high_quality' ? 0 : 1;
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | embedModeBinary;
             pixelIndex += 4;
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
@@ -457,11 +471,15 @@
                     return;
                 }
 
+                const bitsPerPixel = embedMode === 'high_quality' ? 3 : 9;
+
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
-                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;  
+                        for (let j = 0; j < bitsPerPixel; j++) {
+                            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit[j % bitsPerPixel]);
+                            pixelIndex += 1;
+                        }
                     }
                 }
 
@@ -518,7 +536,7 @@
         function extractBinaryData() {
             let pixelIndex = 0;
             let binaryData = [];
-            const isFile = imgData.data[pixelIndex] & 1 ? true : false;
+            const isHighCapacity = imgData.data[pixelIndex] & 1;
             pixelIndex += 4;
 
             let binaryLength = '';
@@ -550,13 +568,14 @@
 
             const chunkSize = 1000;  
             let currentIndex = 0;
+            const bitsPerPixel = isHighCapacity ? 9 : 3;
 
             function extractChunk() {
-                const pixelEnd = Math.min(currentIndex + chunkSize, dataLength * 8);
+                const pixelEnd = Math.min(currentIndex + chunkSize, dataLength * bitsPerPixel);
 
                 for (let i = currentIndex; i < pixelEnd; i++) {
                     let byte = '';
-                    for (let j = 0; j < 8; j++) {
+                    for (let j = 0; j < bitsPerPixel; j++) {
                         const bit = imgData.data[pixelIndex] & 1;
                         byte += bit;
                         pixelIndex += 1;
@@ -564,15 +583,15 @@
                     binaryData.push(parseInt(byte, 2));
                 }
 
-                const progress = Math.round((currentIndex / (dataLength * 8)) * 9) + 90;
+                const progress = Math.round((currentIndex / (dataLength * bitsPerPixel)) * 9) + 90;
                 updateProgressBar(progress);
 
                 currentIndex += chunkSize;
 
-                if (currentIndex < dataLength * 8) {
+                if (currentIndex < dataLength * bitsPerPixel) {
                     setTimeout(extractChunk, 0);
                 } else {
-                    finalizeExtraction(binaryData, isFile, fileExtension);
+                    finalizeExtraction(binaryData, isHighCapacity, fileExtension);
                 }
             }
 
