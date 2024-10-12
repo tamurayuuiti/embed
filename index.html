@@ -41,7 +41,7 @@
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
 
         /* 埋め込み容量の強調表示 */
-        .bold-info {
+        .bold-info-value {
             font-weight: bold;
             color: #333;
         }
@@ -94,7 +94,7 @@
                 <p id="uploadedFileName" class="info"></p>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             </div>
-            <p id="embedCapacityInfo" class="bold-info"></p> <!-- 容量の表示を太字に -->
+            <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p> <!-- 実際の容量値のみを太字に -->
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="loadingIndicator">
@@ -258,7 +258,7 @@
                 maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
             }
 
-            document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
+            document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);  // 値のみ太字
         }
 
         const dropArea = document.getElementById('dropArea');
