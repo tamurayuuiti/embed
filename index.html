@@ -381,6 +381,15 @@
                 return;
             }
 
+            const dataSize = embedOption === 'text'
+                ? new TextEncoder().encode(document.getElementById('textInput').value).length
+                : document.getElementById('fileInput').files[0].size;
+
+            if (!checkFileSize(dataSize)) {
+                alert("埋め込み可能容量を超えています。");
+                return;
+            }
+
             document.getElementById('loadingIndicator').style.display = 'block';
             displayProgress('データ埋め込み中...');
             document.getElementById('progressBarContainer').style.display = 'block'; 
@@ -688,6 +697,11 @@
         function closeModal() {
             document.getElementById('imageModal').style.display = 'none';
         }
+
+        window.addEventListener('DOMContentLoaded', function() {
+            // DOMが完全に読み込まれてからチェック関数が機能するようにする
+            document.getElementById('textInput').addEventListener('input', checkTextSize);
+        });
     </script>
 </body>
 </html>
