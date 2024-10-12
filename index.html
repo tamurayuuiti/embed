@@ -67,6 +67,14 @@
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
+
+            <!-- モード選択 -->
+            <label for="modeSelect">埋め込みモード選択:</label>
+            <select id="modeSelect" onchange="updateEmbedCapacity()">
+                <option value="highQuality">高品質モード (1ピクセルあたり3ビット)</option>
+                <option value="highCapacity">高容量モード (1ピクセルあたり9ビット)</option>
+            </select>
+
             <select id="embedOption" onchange="toggleInput()">
                 <option value="text">文字を埋め込む</option>
                 <option value="file">ファイルを埋め込む</option>
@@ -120,6 +128,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
+        let mode = 'highQuality'; // デフォルトは高品質モード
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -230,16 +239,25 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8) - 100;  // ピクセル数から100バイトを差し引いた容量
-                    document.getElementById('embedImageDetails').innerText = 
-                        `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
-                    
-                    document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
+                    updateEmbedCapacity(pixelCount); // モードに応じた埋め込み可能容量を更新
                     isImageUploaded = true;
                 };
                 img.src = event.target.result;
             };
             reader.readAsDataURL(file);
+        }
+
+        function updateEmbedCapacity(pixelCount) {
+            const modeSelect = document.getElementById('modeSelect');
+            mode = modeSelect.value;
+
+            if (mode === 'highQuality') {
+                maxDataBytes = Math.floor(pixelCount * 3 / 8) - 100;  // 高品質モード
+            } else {
+                maxDataBytes = Math.floor(pixelCount * 9 / 8) - 100;  // 高容量モード
+            }
+
+            document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
         }
 
         const dropArea = document.getElementById('dropArea');
@@ -459,9 +477,16 @@
 
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
-                    for (let bit of byte) {
-                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        pixelIndex += 1;  
+                    if (mode === 'highQuality') {
+                        for (let j = 0; j < 3; j++) {  // 高品質モード：RGBそれぞれ1ビットずつ埋め込む
+                            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(byte[j]);
+                            pixelIndex++;
+                        }
+                    } else {
+                        for (let j = 0; j < 9; j++) {  // 高容量モード：RGBそれぞれ3ビットずつ埋め込む
+                            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(byte[j]);
+                            pixelIndex++;
+                        }
                     }
                 }
 
@@ -556,10 +581,18 @@
 
                 for (let i = currentIndex; i < pixelEnd; i++) {
                     let byte = '';
-                    for (let j = 0; j < 8; j++) {
-                        const bit = imgData.data[pixelIndex] & 1;
-                        byte += bit;
-                        pixelIndex += 1;
+                    if (mode === 'highQuality') {
+                        for (let j = 0; j < 3; j++) {  // 高品質モード：RGBそれぞれ1ビットずつ抽出
+                            const bit = imgData.data[pixelIndex] & 1;
+                            byte += bit;
+                            pixelIndex++;
+                        }
+                    } else {
+                        for (let j = 0; j < 9; j++) {  // 高容量モード：RGBそれぞれ3ビットずつ抽出
+                            const bit = imgData.data[pixelIndex] & 1;
+                            byte += bit;
+                            pixelIndex++;
+                        }
                     }
                     binaryData.push(parseInt(byte, 2));
                 }
