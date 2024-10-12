@@ -40,10 +40,10 @@
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
 
-        /* 埋め込み可能容量の強調 */
-        #embedCapacityInfo {
+        /* 埋め込み容量の強調表示 */
+        .bold-info {
             font-weight: bold;
-            color: #2E8B57;
+            color: #333;
         }
 
         /* 新しいレイアウト調整 */
@@ -94,7 +94,7 @@
                 <p id="uploadedFileName" class="info"></p>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             </div>
-            <p id="embedCapacityInfo" class="info"></p>
+            <p id="embedCapacityInfo" class="bold-info"></p> <!-- 容量の表示を太字に -->
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="loadingIndicator">
@@ -125,8 +125,7 @@
 
     <script>
         let imgData = null;
-        let maxDataBytesHighQuality = 0;
-        let maxDataBytesHighCapacity = 0;
+        let maxDataBytes = 0;
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
@@ -216,12 +215,9 @@
             const textLength = new TextEncoder().encode(text).length; 
             document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
             
-            if (textLength > maxDataBytesHighQuality && embedMode === 'high_quality') {
+            if (textLength > maxDataBytes) {
                 document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 高品質モードの最大バイト数 ${formatBytes(maxDataBytesHighQuality)} を超えています！）`;
-            } else if (textLength > maxDataBytesHighCapacity && embedMode === 'high_capacity') {
-                document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 高容量モードの最大バイト数 ${formatBytes(maxDataBytesHighCapacity)} を超えています！）`;
+                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
             } else {
                 document.getElementById('embedTextCount').classList.remove('warning');
             }
@@ -254,15 +250,15 @@
 
         function updateCapacity() {
             const pixelCount = imgData.width * imgData.height;
-
-            maxDataBytesHighQuality = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
-            maxDataBytesHighCapacity = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
+            embedMode = document.getElementById('embedMode').value;
 
             if (embedMode === 'high_quality') {
-                document.getElementById('embedCapacityInfo').innerText = `高品質モード: 最大 ${formatBytes(maxDataBytesHighQuality)} まで埋め込むことができます。`;
+                maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
             } else {
-                document.getElementById('embedCapacityInfo').innerText = `高容量モード: 最大 ${formatBytes(maxDataBytesHighCapacity)} まで埋め込むことができます。`;
+                maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
             }
+
+            document.getElementById('embedCapacityInfo').innerText = `この画像には最大 ${formatBytes(maxDataBytes)} まで埋め込むことができます。`;
         }
 
         const dropArea = document.getElementById('dropArea');
@@ -320,19 +316,11 @@
         });
 
         function checkFileSize(fileSize) {
-            const embedMode = document.getElementById('embedMode').value;
-            if (embedMode === 'high_quality' && fileSize > maxDataBytesHighQuality) {
-                displayFileSizeWarning(fileSize, '高品質モード');
-                return false;
-            } else if (embedMode === 'high_capacity' && fileSize > maxDataBytesHighCapacity) {
-                displayFileSizeWarning(fileSize, '高容量モード');
+            if (fileSize > maxDataBytes) {
+                displayFileSizeWarning(fileSize);
                 return false;
             }
             return true;
-        }
-
-        function displayFileSizeWarning(fileSize, mode) {
-            alert(`ファイルサイズ (${formatBytes(fileSize)}) は ${mode} の埋め込み可能容量を超えています。`);
         }
 
         function toggleInput() {
