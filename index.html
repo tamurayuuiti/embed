@@ -16,7 +16,7 @@
         button:hover { background-color: #45a049; }
         button:disabled { background-color: #d3d3f3; cursor: not-allowed; }
         .center { display: block; margin-left: auto; margin-right: auto; }
-        .image-preview { margin-top: 20px; text-align: center; }
+        .image-preview { margin-top: 20px; text-align: center; cursor: pointer; }
         .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         .image-preview-container { display: flex; flex-direction: column; }
         @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
@@ -40,7 +40,7 @@
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
 
-        /* 埋め込み容量の強調表示 */
+        /* 埋め込み容量とデータ容量の強調表示 */
         .bold-info-value {
             font-weight: bold;
             color: #333;
@@ -56,6 +56,26 @@
                 width: 100%;
                 text-align: center;
             }
+        }
+
+        /* モーダル表示 */
+        .modal {
+            display: none;
+            position: fixed;
+            z-index: 1000;
+            left: 0;
+            top: 0;
+            width: 100%;
+            height: 100%;
+            background-color: rgba(0, 0, 0, 0.8);
+            align-items: center;
+            justify-content: center;
+        }
+
+        .modal img {
+            max-width: 90%;
+            max-height: 90%;
+            box-shadow: 0 0 10px white;
         }
     </style>
 </head>
@@ -83,7 +103,7 @@
             </select>
             <div id="textInputContainer">
                 <textarea id="textInput" placeholder="文字を入力" oninput="checkTextSize()"></textarea>
-                <p id="embedTextCount" class="info"></p>
+                <p id="embedTextCount" class="info">データ容量: <span class="bold-info-value" id="dataSizeValue"></span></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
                 <div id="fileDropArea">
@@ -94,7 +114,7 @@
                 <p id="uploadedFileName" class="info"></p>
                 <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             </div>
-            <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p> <!-- 実際の容量値のみを太字に -->
+            <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p>
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="loadingIndicator">
@@ -109,11 +129,11 @@
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
                     <p>アップロードした画像（元画像）:</p>
-                    <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
+                    <img id="embedPreviewImage" src="" alt="元画像のプレビュー" onclick="openModal('embedPreviewImage')"/>
                 </div>
                 <div class="image-preview" id="outputImagePreview" style="display:none;">
                     <p>データを埋め込んだ後の画像:</p>
-                    <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+                    <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" onclick="openModal('outputPreviewImage')"/>
                 </div>
             </div>
             <div id="sizeDifference"></div>
@@ -121,6 +141,11 @@
             <div id="diffDisplay"></div>
         </div>
         <canvas id="canvas"></canvas>
+
+        <!-- モーダル表示用 -->
+        <div class="modal" id="imageModal" onclick="closeModal()">
+            <img id="modalImage" src="" alt="拡大画像" />
+        </div>
     </div>
 
     <script>
@@ -213,8 +238,8 @@
         function checkTextSize() {
             const text = document.getElementById('textInput').value;
             const textLength = new TextEncoder().encode(text).length; 
-            document.getElementById('embedTextCount').innerText = `現在の文字数: ${textLength} バイト`;
-            
+            document.getElementById('dataSizeValue').innerText = formatBytes(textLength);  // データサイズを表示
+
             if (textLength > maxDataBytes) {
                 document.getElementById('embedTextCount').classList.add('warning');
                 document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
@@ -258,7 +283,7 @@
                 maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
             }
 
-            document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);  // 値のみ太字
+            document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);  // 埋め込み可能容量を表示
         }
 
         const dropArea = document.getElementById('dropArea');
@@ -317,7 +342,8 @@
 
         function checkFileSize(fileSize) {
             if (fileSize > maxDataBytes) {
-                displayFileSizeWarning(fileSize);
+                alert("データの容量が画像の埋め込み可能容量を超えています！");
+                resetUI();
                 return false;
             }
             return true;
@@ -650,6 +676,17 @@
                 link.click();
                 URL.revokeObjectURL(link.href); 
             });
+        }
+
+        /* 画像拡大用のモーダル処理 */
+        function openModal(imageId) {
+            const imgSrc = document.getElementById(imageId).src;
+            document.getElementById('modalImage').src = imgSrc;
+            document.getElementById('imageModal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('imageModal').style.display = 'none';
         }
     </script>
 </body>
