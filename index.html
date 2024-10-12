@@ -39,6 +39,18 @@
         #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
+
+        /* 新しいレイアウト調整 */
+        @media (max-width: 767px) {
+            #downloadButton {
+                display: block;
+                margin-top: 10px;
+                margin-left: auto;
+                margin-right: auto;
+                width: 100%;
+                text-align: center;
+            }
+        }
     </style>
 </head>
 <body>
@@ -60,7 +72,7 @@
                 <option value="file">ファイルを埋め込む</option>
             </select>
             <div id="textInputContainer">
-                <textarea id="textInput" placeholder="隠したい文字を入力" oninput="checkTextSize()"></textarea>
+                <textarea id="textInput" placeholder="文字を入力" oninput="checkTextSize()"></textarea>
                 <p id="embedTextCount" class="info"></p>
             </div>
             <div id="fileInputContainer" style="display:none;">
@@ -111,7 +123,7 @@
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
-            document.getElementById('outputImagePreview').style.display = 'none';  // 完全に削除
+            document.getElementById('outputImagePreview').style.display = 'none';  
             document.getElementById('downloadButton').style.display = 'none';
             document.getElementById('embedTextCount').innerText = '';
             document.getElementById('errorDisplay').innerText = '';
@@ -159,7 +171,6 @@
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
 
-            // 100% になったら1.5秒後に画像プレビューとダウンロードボタンを表示
             if (percent === 100) {
                 setTimeout(displayImagePreviewAndDownload, 1500);
             }
@@ -316,7 +327,7 @@
             }
 
             if (embedOption === 'text' && !document.getElementById('textInput').value.trim()) {
-                alert("隠したい文字が入力されていません。");
+                alert("文字が入力されていません。");
                 return;
             }
 
