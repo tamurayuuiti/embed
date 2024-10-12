@@ -381,6 +381,12 @@
                 return;
             }
 
+            document.getElementById('loadingIndicator').style.display = 'block';
+            displayProgress('データ埋め込み中...');
+            document.getElementById('progressBarContainer').style.display = 'block'; 
+
+            updateProgressBar(0);
+
             if (embedOption === 'text') {
                 const text = document.getElementById('textInput').value;
                 const textLength = new TextEncoder().encode(text).length;
@@ -685,4 +691,3 @@
     </script>
 </body>
 </html>
-
