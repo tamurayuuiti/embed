@@ -108,10 +108,12 @@
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
                     <p>アップロードした画像（元画像）:</p>
                     <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
+                    <p id="embedImageSizeDetails" class="info"></p> <!-- 画像サイズ・容量を表示 -->
                 </div>
                 <div class="image-preview" id="outputImagePreview" style="display:none;">
                     <p>データを埋め込んだ後の画像:</p>
                     <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
+                    <p id="outputImageSizeDetails" class="info"></p> <!-- 埋め込み後の画像サイズ・容量を表示 -->
                 </div>
             </div>
             <div id="sizeDifference"></div>
@@ -188,6 +190,7 @@
         function displayImagePreviewAndDownload() {
             document.getElementById('outputImagePreview').style.display = 'block';
             document.getElementById('downloadButton').style.display = 'inline-block';
+            displayImageDetails('outputImageSizeDetails', imgData);  // 埋め込み後の画像詳細を表示
         }
 
         function formatBytes(bytes) {
@@ -206,6 +209,13 @@
             const fileType = file.type || '不明';
 
             document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
+        }
+
+        function displayImageDetails(elementId, imgData) {
+            const width = imgData.width;
+            const height = imgData.height;
+            const fileSize = formatBytes(imgData.data.length);  // 画像のバイトサイズ
+            document.getElementById(elementId).innerText = `サイズ: ${width} x ${height} ピクセル, 容量: ${fileSize}`;
         }
 
         function checkTextSize() {
@@ -237,6 +247,7 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
+                    displayImageDetails('embedImageSizeDetails', imgData);  // アップロードした画像の詳細を表示
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
                     updateEmbedCapacity(pixelCount); // モードに応じた埋め込み可能容量を更新
