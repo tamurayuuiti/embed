@@ -39,13 +39,8 @@
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
 
-        /* 埋め込み容量とデータ容量の強調表示 */
-        .bold-info-value { font-weight: bold; color: #333; font-size: 18px; } /* フォントサイズを少し大きくする */
-
-        /* 新しいレイアウト調整 */
+        .bold-info-value { font-weight: bold; color: #333; }
         @media (max-width: 767px) { #downloadButton { display: block; margin-top: 10px; margin-left: auto; margin-right: auto; width: 100%; text-align: center; } }
-
-        /* モーダル表示 */
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center; }
         .modal img { max-width: 90%; max-height: 90%; box-shadow: 0 0 10px white; }
     </style>
@@ -64,7 +59,18 @@
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
-            <p id="embedFileInfo" class="info">対応ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p> <!-- 表示位置を変更 -->
+            <ul id="embedFileInfo" class="info">
+                <li>対応ファイル形式: </li>
+                <li>.txt</li>
+                <li>.json</li>
+                <li>.csv</li>
+                <li>.png</li>
+                <li>.jpg</li>
+                <li>.jpeg</li>
+                <li>.gif</li>
+                <li>.pdf</li>
+                <li>.wav</li>
+            </ul>
             <select id="embedMode" onchange="updateCapacity()">
                 <option value="high_quality">高品質モード</option>
                 <option value="high_capacity">高容量モード</option>
@@ -77,7 +83,7 @@
                 </div>
                 <p id="uploadedFileName" class="info"></p>
             </div>
-            <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p> <!-- フォントサイズ変更 -->
+            <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p>
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
             <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="loadingIndicator">
@@ -118,7 +124,7 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
-        let embedMode = 'high_quality';  // 初期モード: 高品質モード
+        let embedMode = 'high_quality'; 
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -170,7 +176,7 @@
             progressBarText.textContent = percent + '%';
 
             if (percent === 100) {
-                setTimeout(displayImagePreviewAndDownload, 1250);
+                setTimeout(displayImagePreviewAndDownload, 1200);  // 遅延を1.2秒に設定
             }
         }
 
