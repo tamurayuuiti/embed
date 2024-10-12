@@ -172,7 +172,7 @@
             progressBarText.textContent = percent + '%';
 
             if (percent === 100) {
-                setTimeout(displayImagePreviewAndDownload, 1500);
+                setTimeout(displayImagePreviewAndDownload, 1250);
             }
         }
 
@@ -230,7 +230,7 @@
 
                     const fileSizeKB = (file.size / 1024).toFixed(2);
                     const pixelCount = img.width * img.height;
-                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 1024; 
+                    maxDataBytes = Math.floor(pixelCount * 3 / 8 * 0.8) - 100;  // ピクセル数から100バイトを差し引いた容量
                     document.getElementById('embedImageDetails').innerText = 
                         `画像サイズ: ${img.width} x ${img.height} ピクセル\nファイルサイズ: ${formatBytes(file.size)}\n画像形式: ${file.type}\n埋め込める最大容量: ${formatBytes(maxDataBytes)}`;
                     
@@ -496,6 +496,9 @@
                 const originalLength = originalBinaryData.length;
                 const extractedLength = extractedBinaryData.length;
                 const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
+
+                console.log(`元のデータ容量: ${originalLength} バイト`);
+                console.log(`抽出されたデータ容量: ${extractedLength} バイト`);
 
                 if (sizeDifference <= 3) {
                     updateProgressBar(100);
