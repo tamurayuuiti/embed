@@ -27,7 +27,6 @@
         #dropArea.dragging { border-color: #4CAF50; }
         #fileDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 10px; text-align: center; cursor: pointer; }
         #fileDropArea.dragging { border-color: #4CAF50; }
-        #textPreview { max-width: 100%; white-space: pre-wrap; word-wrap: break-word; background-color: #f9f9f9; padding: 10px; border: 1px solid #ccc; max-height: 200px; overflow-y: auto; }
         #canvas { display: none; }
         #loadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
         .loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
@@ -82,7 +81,7 @@
 <body>
     <div class="container">
         <div class="section">
-            <h3>1. 画像に文字やファイルを埋め込む</h3>
+            <h3>1. 画像にファイルを埋め込む</h3>
             <div id="dropArea">
                 <p>ここに画像をドラッグ＆ドロップしてください</p>
                 <p>または</p>
@@ -93,19 +92,11 @@
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
-            <select id="embedOption" onchange="toggleInput()">
-                <option value="text">文字を埋め込む</option>
-                <option value="file">ファイルを埋め込む</option>
-            </select>
             <select id="embedMode" onchange="updateCapacity()">
                 <option value="high_quality">高品質モード</option>
                 <option value="high_capacity">高容量モード</option>
             </select>
-            <div id="textInputContainer">
-                <textarea id="textInput" placeholder="文字を入力" oninput="checkTextSize()"></textarea>
-                <p id="embedTextCount" class="info">データ容量: <span class="bold-info-value" id="dataSizeValue"></span></p>
-            </div>
-            <div id="fileInputContainer" style="display:none;">
+            <div id="fileInputContainer">
                 <div id="fileDropArea">
                     <p>ここにファイルをドラッグ＆ドロップしてください</p>
                     <p>または</p>
@@ -161,7 +152,6 @@
             document.getElementById('outputPreviewImage').src = '';
             document.getElementById('outputImagePreview').style.display = 'none';  
             document.getElementById('downloadButton').style.display = 'none';
-            document.getElementById('embedTextCount').innerText = '';
             document.getElementById('errorDisplay').innerText = '';
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
@@ -228,24 +218,11 @@
         }
 
         function displayFileDetails(file) {
-            const fileSize = formatBytes(file.size);
+            const fileSize = `<strong>${formatBytes(file.size)}</strong>`;
             const fileName = file.name;
             const fileType = file.type || '不明';
 
-            document.getElementById('uploadedFileName').innerText = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
-        }
-
-        function checkTextSize() {
-            const text = document.getElementById('textInput').value;
-            const textLength = new TextEncoder().encode(text).length; 
-            document.getElementById('dataSizeValue').innerText = formatBytes(textLength);  // データサイズを表示
-
-            if (textLength > maxDataBytes) {
-                document.getElementById('embedTextCount').classList.add('warning');
-                document.getElementById('embedTextCount').innerText += `（警告: 最大バイト数 ${formatBytes(maxDataBytes)} を超えています！）`;
-            } else {
-                document.getElementById('embedTextCount').classList.remove('warning');
-            }
+            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
         }
 
         function handleImageUpload(file) {
@@ -349,19 +326,7 @@
             return true;
         }
 
-        function toggleInput() {
-            const embedOption = document.getElementById('embedOption').value;
-            if (embedOption === 'file') {
-                document.getElementById('fileInputContainer').style.display = 'block';
-                document.getElementById('textInputContainer').style.display = 'none';
-            } else {
-                document.getElementById('fileInputContainer').style.display = 'none';
-                document.getElementById('textInputContainer').style.display = 'block';
-            }
-        }
-
         function embedData() {
-            const embedOption = document.getElementById('embedOption').value;
             let binaryData;
             let dataType;
             let fileExtension = '';
@@ -371,22 +336,14 @@
                 return;
             }
 
-            if (embedOption === 'text' && !document.getElementById('textInput').value.trim()) {
-                alert("文字が入力されていません。");
-                return;
-            }
-
-            if (embedOption === 'file' && !isFileUploaded) {
+            if (!isFileUploaded) {
                 alert("ファイルがアップロードされていません。");
                 return;
             }
 
-            const dataSize = embedOption === 'text'
-                ? new TextEncoder().encode(document.getElementById('textInput').value).length
-                : document.getElementById('fileInput').files[0].size;
-
-            if (!checkFileSize(dataSize)) {
-                alert("埋め込み可能容量を超えています。");
+            const file = document.getElementById('fileInput').files[0];
+            const fileSize = file.size;
+            if (!checkFileSize(fileSize)) {
                 return;
             }
 
@@ -396,38 +353,18 @@
 
             updateProgressBar(0);
 
-            if (embedOption === 'text') {
-                const text = document.getElementById('textInput').value;
-                const textLength = new TextEncoder().encode(text).length;
-                if (!checkFileSize(textLength)) return;
-
-                binaryData = new TextEncoder().encode(text); 
-                dataType = 'text'; 
-            } else {
-                const file = document.getElementById('fileInput').files[0];
-                const fileSize = file.size;
-                if (!checkFileSize(fileSize)) return;
-
-                const reader = new FileReader();
-                reader.onload = function(event) {
-                    binaryData = new Uint8Array(event.target.result); 
-                    dataType = determineFileType(file.type); 
-                    fileExtension = file.name.split('.').pop(); 
-                    originalBinaryData = binaryData;
-                    displayProgress('データ抽出中...');
-                    const parityData = addErrorCheckingData(binaryData);
-                    displayProgress('データサイズチェック中...');
-                    embedBinaryData(parityData, dataType, fileExtension); 
-                };
-                reader.readAsArrayBuffer(file);
-                return;
-            }
-
-            originalBinaryData = binaryData;
-            displayProgress('データ抽出中...');
-            const parityData = addErrorCheckingData(binaryData);
-            displayProgress('データサイズチェック中...');
-            embedBinaryData(parityData, dataType, fileExtension); 
+            const reader = new FileReader();
+            reader.onload = function(event) {
+                binaryData = new Uint8Array(event.target.result); 
+                dataType = determineFileType(file.type); 
+                fileExtension = file.name.split('.').pop(); 
+                originalBinaryData = binaryData;
+                displayProgress('データ抽出中...');
+                const parityData = addErrorCheckingData(binaryData);
+                displayProgress('データサイズチェック中...');
+                embedBinaryData(parityData, dataType, fileExtension); 
+            };
+            reader.readAsArrayBuffer(file);
         }
 
         function determineFileType(mimeType) {
@@ -699,8 +636,7 @@
         }
 
         window.addEventListener('DOMContentLoaded', function() {
-            // DOMが完全に読み込まれてからチェック関数が機能するようにする
-            document.getElementById('textInput').addEventListener('input', checkTextSize);
+            // DOMが完全に読み込まれてから処理するために追加
         });
     </script>
 </body>
