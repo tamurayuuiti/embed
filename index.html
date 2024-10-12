@@ -51,6 +51,10 @@
                 text-align: center;
             }
         }
+
+        /* 画像情報表示用の区画 */
+        .image-details-container { margin-top: 20px; }
+        .image-details { margin-bottom: 20px; padding: 10px; border: 1px solid #ccc; border-radius: 5px; background-color: #f1f1f1; }
     </style>
 </head>
 <body>
@@ -103,17 +107,27 @@
                     <span id="progressBarText">0%</span>
                 </div>
             </div>
-            <div id="embedImageDetails" class="details"></div>
+
+            <!-- 画像情報を表示する区画 -->
+            <div class="image-details-container">
+                <div class="image-details" id="embedImageDetails">
+                    <h4>埋め込み前の画像の詳細</h4>
+                    <p id="embedImageSizeDetails" class="info">画像が選択されていません。</p>
+                </div>
+                <div class="image-details" id="outputImageDetails" style="display:none;">
+                    <h4>埋め込み後の画像の詳細</h4>
+                    <p id="outputImageSizeDetails" class="info"></p>
+                </div>
+            </div>
+
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
                     <p>アップロードした画像（元画像）:</p>
                     <img id="embedPreviewImage" src="" alt="元画像のプレビュー" />
-                    <p id="embedImageSizeDetails" class="info"></p> <!-- 画像サイズ・容量を表示 -->
                 </div>
                 <div class="image-preview" id="outputImagePreview" style="display:none;">
                     <p>データを埋め込んだ後の画像:</p>
                     <img id="outputPreviewImage" src="" alt="埋め込み後の画像プレビュー" />
-                    <p id="outputImageSizeDetails" class="info"></p> <!-- 埋め込み後の画像サイズ・容量を表示 -->
                 </div>
             </div>
             <div id="sizeDifference"></div>
@@ -141,6 +155,7 @@
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
+            document.getElementById('embedImageSizeDetails').innerText = '画像が選択されていません。';
         }
 
         function validateImageFile(file) {
@@ -191,6 +206,7 @@
             document.getElementById('outputImagePreview').style.display = 'block';
             document.getElementById('downloadButton').style.display = 'inline-block';
             displayImageDetails('outputImageSizeDetails', imgData);  // 埋め込み後の画像詳細を表示
+            document.getElementById('outputImageDetails').style.display = 'block';
         }
 
         function formatBytes(bytes) {
@@ -259,6 +275,8 @@
         }
 
         function updateEmbedCapacity(pixelCount) {
+            if (!isImageUploaded) return; // 画像がアップロードされていない場合は処理をスキップ
+
             const modeSelect = document.getElementById('modeSelect');
             mode = modeSelect.value;
 
