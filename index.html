@@ -58,18 +58,7 @@
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
-            <p id="embedFileInfo" class="info">埋め込み可能ファイル形式:</p>
-            <ul class="file-formats">
-                <li>.txt</li>
-                <li>.json</li>
-                <li>.csv</li>
-                <li>.png</li>
-                <li>.jpg</li>
-                <li>.jpeg</li>
-                <li>.gif</li>
-                <li>.pdf</li>
-                <li>.wav</li>
-            </ul>
+            <p id="embedFileInfo" class="info">埋め込み可能ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             <select id="embedMode" onchange="updateCapacity()">
                 <option value="high_quality">高品質モード</option>
                 <option value="high_capacity">高容量モード</option>
@@ -199,7 +188,7 @@
             const fileName = file.name;
             const fileType = file.type || '不明';
 
-            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}, ファイルサイズ: ${fileSize}, ファイル形式: ${fileType}`;
+            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>ファイルサイズ: ${fileSize}`;
         }
 
         function handleImageUpload(file) {
