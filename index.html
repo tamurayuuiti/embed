@@ -16,11 +16,11 @@
         .image-preview-container {display: flex; flex-direction: column;} @media (min-width: 768px) {.image-preview-container {flex-direction: row; justify-content: space-around;} .image-preview {width: 48%;}}
         .info {font-size: 14px; color: #666; margin-top: 5px;} .details {font-size: 14px; margin-top: 10px; color: #333;} .warning {color: red;}
         #dropArea, #fileDropArea {border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer;} #dropArea.dragging, #fileDropArea.dragging {border-color: #4CAF50;}
-        #canvas {display: none;} #loadingIndicator, #uploadIndicator {display: none; margin-top: 10px; display: flex; align-items: center;} /* インジケータとメッセージを横並びに */
-        .loader, .upload-loader {border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px;}
+        #canvas {display: none;} #uploadIndicator {display: none; margin-top: 10px; display: flex; align-items: center;} /* インジケータとメッセージを横並びに */
+        .loader {border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px;}
         @keyframes spin {0% {transform: rotate(0deg);} 100% {transform: rotate(360deg);}} #downloadButton {display: none; margin-left: 10px;}
         #errorDisplay {color: red; font-weight: bold; margin-top: 10px;} #diffDisplay {color: red; font-family: monospace; margin-top: 20px; display: none;} #sizeDifference {color: red; font-weight: bold; margin-top: 10px;}
-        #progressBarContainer {width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative;}
+        #progressBarContainer {width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; display: none;} /* 非表示の状態にする */
         #progressBar {height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease;}
         #progressBarText {position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold;}
         .bold-info-value {font-weight: bold; color: #333;} @media (max-width: 767px) {#downloadButton {display: block; margin-top: 10px; margin-left: auto; margin-right: auto; width: 100%; text-align: center;}}
@@ -51,10 +51,6 @@
                 <p>または</p>
                 <input type="file" id="embedImageInput" accept="image/png, image/jpeg, image/heif">
             </div>
-            <div id="uploadIndicator">
-                <div class="upload-loader"></div>
-                <span id="progressMessage">進捗メッセージ</span> <!-- メッセージを回転インジケータの右横に配置 -->
-            </div>
             <p id="uploadedImageName" class="info"></p>
             <p id="embedFileInfo" class="info">埋め込み可能ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
             <select id="embedMode" onchange="updateCapacity()">
@@ -72,15 +68,16 @@
             </div>
             <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p>
             <button id="embedButton" onclick="embedData()">データを埋め込む</button>
-            <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
-            <div id="loadingIndicator">
+            <div id="uploadIndicator">
                 <div class="loader"></div>
+                <span id="progressMessage"></span> <!-- 進捗メッセージの表示位置 -->
             </div>
-            <div id="progressBarContainer" style="display:none;">
+            <div id="progressBarContainer">
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
                 </div>
             </div>
+            <button id="downloadButton" style="display:none;" onclick="downloadImage()">埋め込んだ画像をダウンロード</button>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
@@ -120,7 +117,8 @@
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
-            document.getElementById('progressMessage').innerText = '';  // 進捗メッセージもリセット
+            document.getElementById('progressMessage').innerText = '';  // 進捗メッセージをリセット
+            document.getElementById('uploadIndicator').style.display = 'none';  // インジケータ非表示
         }
 
         function validateImageFile(file) {
@@ -328,10 +326,8 @@
                 return;
             }
 
-            document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('データ埋め込み中...');
+            document.getElementById('uploadIndicator').style.display = 'flex';  // 埋め込み開始後に表示
             document.getElementById('progressBarContainer').style.display = 'block'; 
-
             updateProgressBar(0);
 
             const reader = new FileReader();
