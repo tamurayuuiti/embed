@@ -35,6 +35,10 @@
             #progressBarContainer {background-color: #333; border-color: #444;}
             .modal img {box-shadow: 0 0 10px #e0e0e0;}
         }
+
+        /* モーダル表示 */
+        .modal {display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center;} /* モーダルの位置を修正 */
+        .modal img {max-width: 90%; max-height: 90%; box-shadow: 0 0 10px white;}
     </style>
 </head>
 <body>
@@ -90,11 +94,11 @@
             <div id="sizeDifference"></div>
             <div id="errorDisplay"></div>
             <div id="diffDisplay"></div>
+            <div id="progressMessage" class="info"></div> <!-- 進捗メッセージを表示するための要素 -->
         </div>
         <canvas id="canvas"></canvas>
 
-        <!-- モーダル表示用 -->
-        <div class="modal" id="imageModal" style="display:none;" onclick="closeModal()"> <!-- 初期表示は非表示 -->
+        <div class="modal" id="imageModal" onclick="closeModal()">
             <img id="modalImage" src="" alt="拡大画像" />
         </div>
     </div>
@@ -116,6 +120,7 @@
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
+            document.getElementById('progressMessage').innerText = '';  // 進捗メッセージもリセット
         }
 
         function validateImageFile(file) {
@@ -133,6 +138,7 @@
 
         function displayProgress(message) {
             console.log("Progress Message:", message);  
+            document.getElementById('progressMessage').innerText = message;  // サイト上にもメッセージを表示
         }
 
         function displayError(message) {
@@ -178,15 +184,14 @@
         }
 
         function displayFileDetails(file) {
-    const fileSize = formatBytes(file.size);
-    const fileName = file.name;
-    const fileType = file.type || '不明';
-    const comparisonText = `ファイル容量: <span class="bold-info-value">${fileSize}</span> / <span class="bold-info-value">${formatBytes(maxDataBytes)}</span>`;
-    const isEmbeddable = file.size <= maxDataBytes ? '埋め込み可能' : '埋め込み不可';
+            const fileSize = formatBytes(file.size);
+            const fileName = file.name;
+            const fileType = file.type || '不明';
+            const comparisonText = `ファイル容量: <span class="bold-info-value">${fileSize}</span> / <span class="bold-info-value">${formatBytes(maxDataBytes)}</span>`;
+            const isEmbeddable = file.size <= maxDataBytes ? '埋め込み可能' : '埋め込み不可';
 
-    // "この位置" の部分に比較結果を表示
-    document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>${comparisonText} (${isEmbeddable})<br>`;
-}
+            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>${comparisonText} (${isEmbeddable})<br>`;
+        }
 
         function handleImageUpload(file) {
             resetUI();
@@ -590,11 +595,10 @@
             });
         }
 
-        /* 画像拡大用のモーダル処理 */
         function openModal(imageId) {
             const imgSrc = document.getElementById(imageId).src;
             document.getElementById('modalImage').src = imgSrc;
-            document.getElementById('imageModal').style.display = 'flex';
+            document.getElementById('imageModal').style.display = 'flex'; // 修正：flexで中央に表示
         }
 
         function closeModal() {
