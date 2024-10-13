@@ -63,7 +63,6 @@
                     <input type="file" id="fileInput" accept=".txt,.json,.csv,.png,.jpg,.jpeg,.gif,.pdf,.wav">
                 </div>
                 <p id="uploadedFileName" class="info"></p>
-                <!-- 容量表示をこの位置に移動 -->
                 <p id="fileSizeComparison" class="info"></p>
             </div>
             <p id="embedCapacityInfo" class="info">この画像には最大 <span class="bold-info-value" id="maxCapacityValue"></span> まで埋め込むことができます。</p>
@@ -95,7 +94,7 @@
         <canvas id="canvas"></canvas>
 
         <!-- モーダル表示用 -->
-        <div class="modal" id="imageModal" onclick="closeModal()" style="display:none;"> <!-- 初期表示は非表示 -->
+        <div class="modal" id="imageModal" style="display:none;" onclick="closeModal()"> <!-- 初期表示は非表示 -->
             <img id="modalImage" src="" alt="拡大画像" />
         </div>
     </div>
