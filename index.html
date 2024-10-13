@@ -136,9 +136,15 @@
             return true;
         }
 
-        function displayProgress(message) {
-            console.log("Progress Message:", message);  
-            document.getElementById('progressMessage').innerText = message;  // サイト上にもメッセージを表示
+        function displayProgress(message, progressPercent) {
+            console.log("Progress Message:", message);  // コンソール出力を維持
+            if (progressPercent >= 0 && progressPercent < 90) {
+                document.getElementById('progressMessage').innerText = "データ埋め込み中";
+            } else if (progressPercent >= 90 && progressPercent < 100) {
+                document.getElementById('progressMessage').innerText = "データ確認中";
+            } else if (progressPercent === 100) {
+                document.getElementById('progressMessage').innerText = "データ埋め込み完了";
+            }
         }
 
         function displayError(message) {
@@ -162,6 +168,8 @@
             const progressBarText = document.getElementById('progressBarText');
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
+
+            displayProgress("Progress", percent);
 
             if (percent === 100) {
                 setTimeout(displayImagePreviewAndDownload, 1200);  // 遅延を1.2秒に設定
@@ -321,7 +329,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('データ埋め込み中...');
+            displayProgress('データ埋め込み中...', 0);  // 0%の段階で埋め込み中メッセージを表示
             document.getElementById('progressBarContainer').style.display = 'block'; 
 
             updateProgressBar(0);
@@ -332,9 +340,9 @@
                 dataType = determineFileType(file.type); 
                 fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
-                displayProgress('データ抽出中...');
+                displayProgress('データ抽出中...', 90);  // 90%でデータ確認中を表示
                 const parityData = addErrorCheckingData(binaryData);
-                displayProgress('データサイズチェック中...');
+                displayProgress('データサイズチェック中...', 99);  // 99%で確認中のまま
                 embedBinaryData(parityData, dataType, fileExtension); 
             };
             reader.readAsArrayBuffer(file);
@@ -444,12 +452,12 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
-            displayProgress('データ抽出中...');
+            displayProgress('データ抽出中...', 90);
 
             updateProgressBar(90);
 
             const extractedBinaryData = originalBinaryData; 
-            displayProgress('データサイズチェック中...');
+            displayProgress('データサイズチェック中...', 99);
 
             let progress = 90;
             const interval = setInterval(() => {
@@ -471,10 +479,10 @@
 
                 if (sizeDifference <= 3) {
                     updateProgressBar(100);
-                    displayProgress('データ埋め込み完了');
+                    displayProgress('データ埋め込み完了', 100);
                     document.getElementById('loadingIndicator').style.display = 'none';
                 } else {
-                    displayProgress('データエラーチェック中...');
+                    displayProgress('データエラーチェック中...', 99);
                     displaySizeDifference(sizeDifference.toFixed(2));
                     const diff = calculateDiff(originalBinaryData, extractedBinaryData);
                     displayDiff(diff);
