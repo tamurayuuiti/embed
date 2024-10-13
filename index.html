@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>ステガノグラフィー - 画像に文字やファイルを埋め込む</title>
+    <title>ステガノグラフィー - 画像にファイルを埋め込む</title>
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; }
         .container { max-width: 85%; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; }
@@ -38,7 +38,6 @@
         #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; }
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
-
         .bold-info-value { font-weight: bold; color: #333; }
         @media (max-width: 767px) { #downloadButton { display: block; margin-top: 10px; margin-left: auto; margin-right: auto; width: 100%; text-align: center; } }
         .modal { display: none; position: fixed; z-index: 1000; left: 0; top: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center; }
@@ -59,8 +58,8 @@
                 <span id="progressDisplay">埋め込み中...</span>
             </div>
             <p id="uploadedImageName" class="info"></p>
-            <ul id="embedFileInfo" class="info">
-                <li>対応ファイル形式: </li>
+            <p id="embedFileInfo" class="info">埋め込み可能ファイル形式:</p>
+            <ul class="file-formats">
                 <li>.txt</li>
                 <li>.json</li>
                 <li>.csv</li>
@@ -496,7 +495,7 @@
             pixelIndex += 4;
 
             let binaryLength = '';
-            for (let i = 0; i < 32; i++) {
+            for (let i = 0; 32 > i; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 binaryLength += bit;
                 pixelIndex += 4;
@@ -504,7 +503,7 @@
             const dataLength = parseInt(binaryLength, 2);
 
             let extLengthBinary = '';
-            for (let i = 0; i < 8; i++) {
+            for (let i = 0; 8 > i; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 extLengthBinary += bit;
                 pixelIndex += 4;
@@ -512,9 +511,9 @@
             const extLength = parseInt(extLengthBinary, 2);
 
             let fileExtension = '';
-            for (let i = 0; i < extLength; i++) {
+            for (let i = 0; extLength > i; i++) {
                 let charBinary = '';
-                for (let j = 0; j < 8; j++) {
+                for (let j = 0; 8 > j; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     charBinary += bit;
                     pixelIndex += 4;
@@ -531,7 +530,7 @@
 
                 for (let i = currentIndex; i < pixelEnd; i++) {
                     let byte = '';
-                    for (let j = 0; j < bitsPerPixel; j++) {
+                    for (let j = 0; bitsPerPixel > j; j++) {
                         const bit = imgData.data[pixelIndex] & 1;
                         byte += bit;
                         pixelIndex += 1;
@@ -574,9 +573,7 @@
 
         function arraysEqual(a, b) {
             if (a.length !== b.length) return false;
-            for (let i = 0; i < a.length; i++) {
-                if (a[i] !== b[i]) return false;
-            }
+            for (let i = 0; a.length > i; i++) if (a[i] !== b[i]) return false;
             return true;
         }
 
