@@ -178,15 +178,15 @@
         }
 
         function displayFileDetails(file) {
-            const fileSize = formatBytes(file.size);
-            const fileName = file.name;
-            const fileType = file.type || '不明';
-            const comparisonText = `ファイル容量: <span class="bold-info-value">${fileSize}</span> / <span class="bold-info-value">${formatBytes(maxDataBytes)}</span>`;
-            const isEmbeddable = file.size <= maxDataBytes ? '埋め込み可能' : '埋め込み不可';
+    const fileSize = formatBytes(file.size);
+    const fileName = file.name;
+    const fileType = file.type || '不明';
+    const comparisonText = `ファイル容量: <span class="bold-info-value">${fileSize}</span> / <span class="bold-info-value">${formatBytes(maxDataBytes)}</span>`;
+    const isEmbeddable = file.size <= maxDataBytes ? '埋め込み可能' : '埋め込み不可';
 
-            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>この位置<br>`;
-            document.getElementById('fileSizeComparison').innerHTML = `${comparisonText} (${isEmbeddable})`;
-        }
+    // "この位置" の部分に比較結果を表示
+    document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>${comparisonText} (${isEmbeddable})<br>`;
+}
 
         function handleImageUpload(file) {
             resetUI();
