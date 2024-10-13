@@ -7,22 +7,38 @@
     <style>
         body { font-family: Arial, sans-serif; margin: 20px; background-color: #f9f9f9; color: #333; transition: background-color 0.3s, color 0.3s; }
         .container { max-width: 85%; margin: 0 auto; background-color: #fff; padding: 20px; box-shadow: 0 0 10px rgba(0, 0, 0, 0.1); border-radius: 8px; }
-        .section { margin-bottom: 40px; } .section h3 { color: #444; margin-bottom: 10px; } .section p { margin: 5px 0; color: #666; }
+        .section { margin-bottom: 40px; }
+        .section h3 { color: #444; margin-bottom: 10px; }
+        .section p { margin: 5px 0; color: #666; }
         input[type="file"], input[type="text"], textarea, button, select { margin-top: 10px; padding: 10px; font-size: 16px; border-radius: 5px; border: 1px solid #ccc; }
-        input[type="file"] { width: 100%; box-sizing: border-box; } /* スマホ対応のための幅調整 */
-        textarea { width: calc(100% - 22px); height: 80px; resize: vertical; } button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
-        button:hover { background-color: #45a049; } button:disabled { background-color: #d3d3f3; cursor: not-allowed; } .center { display: block; margin-left: auto; margin-right: auto; }
-        .image-preview { margin-top: 20px; text-align: center; cursor: pointer; } .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
-        .image-preview-container { display: flex; flex-direction: column; } @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
-        .info { font-size: 14px; color: #666; margin-top: 5px; } .details { font-size: 14px; margin-top: 10px; color: #333; } .warning { color: red; }
-        #dropArea, #fileDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; } #dropArea.dragging, #fileDropArea.dragging { border-color: #4CAF50; }
-        #canvas { display: none; } #loadingIndicator, #uploadIndicator { display: none; margin-top: 10px; } .loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
-        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } } #downloadButton { display: none; margin-left: 10px; }
-        #errorDisplay { color: red; font-weight: bold; margin-top: 10px; } #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; } #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
+        input[type="file"] { width: 100%; box-sizing: border-box; }
+        textarea { width: calc(100% - 22px); height: 80px; resize: vertical; }
+        button { background-color: #4CAF50; color: white; border: none; cursor: pointer; margin-right: 10px; padding: 10px 20px; text-align: center; }
+        button:hover { background-color: #45a049; }
+        button:disabled { background-color: #d3d3f3; cursor: not-allowed; }
+        .center { display: block; margin-left: auto; margin-right: auto; }
+        .image-preview { margin-top: 20px; text-align: center; cursor: pointer; }
+        .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
+        .image-preview-container { display: flex; flex-direction: column; }
+        @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
+        .info { font-size: 14px; color: #666; margin-top: 5px; }
+        .details { font-size: 14px; margin-top: 10px; color: #333; }
+        .warning { color: red; }
+        #dropArea, #fileDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
+        #dropArea.dragging, #fileDropArea.dragging { border-color: #4CAF50; }
+        #canvas { display: none; }
+        #loadingIndicator, #uploadIndicator { display: none; margin-top: 10px; }
+        .loader, .upload-loader { border: 6px solid #f3f3f3; border-radius: 50%; border-top: 6px solid #3498db; width: 40px; height: 40px; animation: spin 2s linear infinite; display: inline-block; margin-right: 10px; }
+        @keyframes spin { 0% { transform: rotate(0deg); } 100% { transform: rotate(360deg); } }
+        #downloadButton { display: none; margin-left: 10px; }
+        #errorDisplay { color: red; font-weight: bold; margin-top: 10px; }
+        #diffDisplay { color: red; font-family: monospace; margin-top: 20px; display: none; }
+        #sizeDifference { color: red; font-weight: bold; margin-top: 10px; }
         #progressBarContainer { width: 100%; background-color: #f3f3f3; border: 1px solid #ccc; border-radius: 5px; margin-top: 10px; height: 30px; position: relative; display: flex; justify-content: space-between; align-items: center; }
         #progressBar { height: 100%; width: 0%; background-color: #4CAF50; border-radius: 5px; transition: width 0.3s ease; }
         #progressBarText { position: absolute; top: 0; left: 50%; transform: translateX(-50%); font-size: 14px; line-height: 30px; color: black; font-weight: bold; }
-        .bold-info-value { font-weight: bold; color: #333; } @media (max-width: 767px) { #downloadButton { display: block; margin-top: 10px; margin-left: auto; margin-right: auto; width: 100%; text-align: center; } }
+        .bold-info-value { font-weight: bold; color: #333; }
+        @media (max-width: 767px) { #downloadButton { display: block; margin-top: 10px; margin-left: auto; margin-right: auto; width: 100%; text-align: center; } }
 
         /* ダークモード対応 */
         @media (prefers-color-scheme: dark) {
@@ -79,7 +95,7 @@
                 <div id="progressBar">
                     <span id="progressBarText">0%</span>
                 </div>
-                <span id="progressMessage" class="info"></span> <!-- 進捗メッセージをインジケータの横に表示 -->
+                <span id="progressMessage" class="info"></span>
             </div>
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
@@ -120,7 +136,7 @@
             document.getElementById('diffDisplay').innerText = '';
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
-            document.getElementById('progressMessage').innerText = '';  // 進捗メッセージもリセット
+            document.getElementById('progressMessage').innerText = '';
         }
 
         function validateImageFile(file) {
@@ -137,7 +153,7 @@
         }
 
         function displayProgress(message, progressPercent) {
-            console.log("Progress Message:", message);  // コンソール出力を維持
+            console.log("Progress Message:", message);
             if (progressPercent >= 0 && progressPercent < 90) {
                 document.getElementById('progressMessage').innerText = "データ埋め込み中";
             } else if (progressPercent >= 90 && progressPercent < 100) {
@@ -172,7 +188,7 @@
             displayProgress("Progress", percent);
 
             if (percent === 100) {
-                setTimeout(displayImagePreviewAndDownload, 1200);  // 遅延を1.2秒に設定
+                setTimeout(displayImagePreviewAndDownload, 1200);
             }
         }
 
@@ -217,7 +233,7 @@
                     document.getElementById('embedPreviewImage').src = event.target.result;
                     document.getElementById('embedImagePreview').style.display = 'block';
 
-                    updateCapacity();  // 容量を更新
+                    updateCapacity(); 
 
                     isImageUploaded = true;
                 };
@@ -236,11 +252,11 @@
                 maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
             }
 
-            document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);  // 埋め込み可能容量を表示
+            document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);
 
             const fileInput = document.getElementById('fileInput').files[0];
             if (fileInput) {
-                displayFileDetails(fileInput);  // モード変更時に埋め込み容量の表示を更新
+                displayFileDetails(fileInput);  
             }
         }
 
@@ -329,7 +345,7 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            displayProgress('データ埋め込み中...', 0);  // 0%の段階で埋め込み中メッセージを表示
+            displayProgress('データ埋め込み中...', 0);  
             document.getElementById('progressBarContainer').style.display = 'block'; 
 
             updateProgressBar(0);
@@ -340,9 +356,9 @@
                 dataType = determineFileType(file.type); 
                 fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
-                displayProgress('データ抽出中...', 90);  // 90%でデータ確認中を表示
+                displayProgress('データ抽出中...', 90);  
                 const parityData = addErrorCheckingData(binaryData);
-                displayProgress('データサイズチェック中...', 99);  // 99%で確認中のまま
+                displayProgress('データサイズチェック中...', 99);  
                 embedBinaryData(parityData, dataType, fileExtension); 
             };
             reader.readAsArrayBuffer(file);
@@ -396,26 +412,26 @@
 
             const embedModeBinary = embedMode === 'high_quality' ? 0 : 1;
             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | embedModeBinary;
-            pixelIndex += 4;
+            pixelIndex += 4;  // アルファチャンネルをスキップ
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
-                pixelIndex += 4;
+                pixelIndex += 4;  // アルファチャンネルをスキップ
             }
 
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
-            for (let i = 0; extLengthBinary.length > i; i++) {
+            for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
-                pixelIndex += 4;
+                pixelIndex += 4;  // アルファチャンネルをスキップ
             }
 
-            for (let i = 0; fileExtension.length > i; i++) {
+            for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;
+                    pixelIndex += 4;  // アルファチャンネルをスキップ
                 }
             }
 
@@ -438,6 +454,7 @@
                         for (let j = 0; j < bitsPerPixel; j++) {
                             imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit[j % bitsPerPixel]);
                             pixelIndex += 1;
+                            if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
                         }
                     }
                 }
@@ -538,6 +555,7 @@
                         const bit = imgData.data[pixelIndex] & 1;
                         byte += bit;
                         pixelIndex += 1;
+                        if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
                     }
                     binaryData.push(parseInt(byte, 2));
                 }
@@ -606,16 +624,12 @@
         function openModal(imageId) {
             const imgSrc = document.getElementById(imageId).src;
             document.getElementById('modalImage').src = imgSrc;
-            document.getElementById('imageModal').style.display = 'flex'; // 修正：flexで中央に表示
+            document.getElementById('imageModal').style.display = 'flex';
         }
 
         function closeModal() {
             document.getElementById('imageModal').style.display = 'none';
         }
-
-        window.addEventListener('DOMContentLoaded', function() {
-            // DOMが完全に読み込まれてから処理するために追加
-        });
     </script>
 </body>
 </html>
