@@ -389,7 +389,6 @@
             }
 
             const embedChunkSize = 1000; 
-            
             function embedChunks(startIndex) {
                 if (startIndex >= binaryData.length) {
                     const ctx = document.getElementById('canvas').getContext('2d');
@@ -404,10 +403,12 @@
 
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
-                    for (let j = 0; j < 8; j++) {  
-                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(byte[j]);
-                        pixelIndex += 1;  // 修正: 1ピクセルに対して1ビット進行
-                        if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
+                    for (let bit of byte) {
+                        for (let j = 0; j < bitsPerPixel; j++) {
+                            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit[j % bitsPerPixel]);
+                            pixelIndex += 1;
+                            if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
+                        }
                     }
                 }
 
