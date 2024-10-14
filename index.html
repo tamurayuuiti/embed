@@ -404,7 +404,7 @@
 
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
-                    for (let j = 0; j < 8; j++) {  // 8ビットすべてを処理するよう修正
+                    for (let j = 0; j < 8; j++) {  
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(byte[j]);
                         pixelIndex += 4;  // アルファチャンネルをスキップ
                     }
