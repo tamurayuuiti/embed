@@ -406,7 +406,8 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let j = 0; j < 8; j++) {  
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(byte[j]);
-                        pixelIndex += 4;  // アルファチャンネルをスキップ
+                        pixelIndex += 1;  // 修正: 1ピクセルに対して1ビット進行
+                        if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
                     }
                 }
 
