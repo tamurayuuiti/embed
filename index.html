@@ -399,10 +399,6 @@
         function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
 
-            // 高品質モードのビットフラグを設定
-            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE);
-            pixelIndex += 4;  // アルファチャンネルをスキップ
-
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
@@ -501,7 +497,6 @@
         function extractBinaryData() {
             let pixelIndex = 0;
             let binaryData = [];
-            const isHighCapacity = imgData.data[pixelIndex] & 1;
             pixelIndex += 4;
 
             let binaryLength = '';
