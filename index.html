@@ -431,46 +431,74 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
-            displayProgress('データ抽出中...', 90);
+    displayProgress('データ抽出中...', 90);
+    updateProgressBar(90);
 
-            updateProgressBar(90);
+    // 埋め込み後の画像からデータを再抽出
+    let pixelIndex = 0;
 
-            const extractedBinaryData = originalBinaryData; 
-            displayProgress('データサイズチェック中...', 99);
-
-            let progress = 90;
-            const interval = setInterval(() => {
-                if (progress < 99) {
-                    progress += 1;
-                    updateProgressBar(progress);
-                } else {
-                    clearInterval(interval);
-                }
-            }, 100);
-
-            setTimeout(() => {
-                const originalLength = originalBinaryData.length;
-                const extractedLength = extractedBinaryData.length;
-                const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
-
-                console.log(`元のデータ容量: ${originalLength} バイト`);
-                console.log(`抽出されたデータ容量: ${extractedLength} バイト`);
-
-                if (sizeDifference <= 3) {
-                    updateProgressBar(100);
-                    displayProgress('データ埋め込み完了', 100);
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                } else {
-                    displayProgress('データエラーチェック中...', 99);
-                    displaySizeDifference(sizeDifference.toFixed(2));
-                    const diff = calculateDiff(originalBinaryData, extractedBinaryData);
-                    displayDiff(diff);
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    displayError("データの埋め込みに失敗しました。");
-                }
-            }, 3000);
+    // データ長の抽出（32ビット）
+    let binaryLength = '';
+    for (let i = 0; i < 32; i++) {
+        const bit = imgData.data[pixelIndex] & 1;
+        binaryLength += bit;
+        pixelIndex += 1;
+        if ((pixelIndex + 1) % 4 === 0) {
+            pixelIndex += 1;  // アルファチャンネルをスキップ
         }
+    }
+    const dataLength = parseInt(binaryLength, 2);
 
+    // データ本体の再抽出
+    const extractedBinaryData = [];
+    for (let i = 0; i < dataLength; i++) {
+        let byte = '';
+        for (let j = 0; j < 8; j++) {
+            const bit = imgData.data[pixelIndex] & 1;
+            byte += bit;
+            pixelIndex += 1;
+            if ((pixelIndex + 1) % 4 === 0) {
+                pixelIndex += 1;  // アルファチャンネルをスキップ
+            }
+        }
+        extractedBinaryData.push(parseInt(byte, 2));
+    }
+
+    // データサイズをチェック
+    displayProgress('データサイズチェック中...', 99);
+    let progress = 90;
+    const interval = setInterval(() => {
+        if (progress < 99) {
+            progress += 1;
+            updateProgressBar(progress);
+        } else {
+            clearInterval(interval);
+        }
+    }, 100);
+
+    setTimeout(() => {
+        const originalLength = originalBinaryData.length;
+        const extractedLength = extractedBinaryData.length;
+        const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
+
+        console.log(`元のデータ容量: ${originalLength} バイト`);
+        console.log(`抽出されたデータ容量: ${extractedLength} バイト`);
+
+        if (sizeDifference <= 3) {
+            updateProgressBar(100);
+            displayProgress('データ埋め込み完了', 100);
+            document.getElementById('loadingIndicator').style.display = 'none';
+        } else {
+            displayProgress('データエラーチェック中...', 99);
+            displaySizeDifference(sizeDifference.toFixed(2));
+            const diff = calculateDiff(originalBinaryData, extractedBinaryData);
+            displayDiff(diff);
+            document.getElementById('loadingIndicator').style.display = 'none';
+            displayError("データの埋め込みに失敗しました。");
+        }
+    }, 3000);
+}
+        
         function arraysEqual(a, b) {
             if (a.length !== b.length) return false;
             for (let i = 0; a.length > i; i++) if (a[i] !== b[i]) return false;
