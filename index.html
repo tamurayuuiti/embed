@@ -122,7 +122,6 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
-        let pixelIndex = 0;
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -158,14 +157,15 @@
             }
         }
 
-        function updateProgressState(progressPercent, message) {
-            updateProgressBar(progressPercent);
-            displayProgress(message, progressPercent);
-        }
-
         function displayError(message) {
             const errorDisplay = document.getElementById('errorDisplay');
             errorDisplay.innerText = message;
+        }
+
+        function displayDiff(diffMessage) {
+            const diffDisplay = document.getElementById('diffDisplay');
+            diffDisplay.innerHTML = diffMessage;
+            diffDisplay.style.display = 'block';
         }
 
         function displaySizeDifference(difference) {
@@ -178,6 +178,8 @@
             const progressBarText = document.getElementById('progressBarText');
             progressBar.style.width = percent + '%';
             progressBarText.textContent = percent + '%';
+
+            displayProgress("Progress", percent);
 
             if (percent === 100) {
                 setTimeout(displayImagePreviewAndDownload, 1200);
@@ -201,13 +203,12 @@
 
         function displayFileDetails(file) {
             const fileSize = formatBytes(file.size);
+            const fileName = file.name;
+            const fileType = file.type || '不明';
             const comparisonText = `ファイル容量: <span class="bold-info-value">${fileSize}</span> / <span class="bold-info-value">${formatBytes(maxDataBytes)}</span>`;
             const isEmbeddable = file.size <= maxDataBytes ? '埋め込み可能' : '埋め込み不可';
 
-            document.getElementById('uploadedFileName').innerHTML = `
-                ファイル名: ${file.name}<br>
-                ファイル形式: ${file.type || '不明'}<br>
-                ${comparisonText} (${isEmbeddable})<br>`;
+            document.getElementById('uploadedFileName').innerHTML = `ファイル名: ${fileName}<br>ファイル形式: ${fileType}<br>${comparisonText} (${isEmbeddable})<br>`;
         }
 
         function handleImageUpload(file) {
@@ -247,35 +248,41 @@
             }
         }
 
-        function addDragAndDropListeners(element, onDropCallback) {
-            element.addEventListener('dragover', (e) => {
-                e.preventDefault();
-                element.classList.add('dragging');
-            });
-            element.addEventListener('dragleave', () => {
-                element.classList.remove('dragging');
-            });
-            element.addEventListener('drop', (e) => {
-                e.preventDefault();
-                element.classList.remove('dragging');
-                onDropCallback(e.dataTransfer.files[0]);
-            });
-        }
-
-        // ドラッグ&ドロップのイベントリスナー設定
-        addDragAndDropListeners(document.getElementById('dropArea'), (file) => {
+        const dropArea = document.getElementById('dropArea');
+        dropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            dropArea.classList.add('dragging');
+        });
+        dropArea.addEventListener('dragleave', () => {
+            dropArea.classList.remove('dragging');
+        });
+        dropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            dropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
             if (validateImageFile(file)) {
                 handleImageUpload(file);
                 uploadedFileName = file.name;
                 document.getElementById('uploadedImageName').innerText = `アップロードした画像: ${uploadedFileName}`;
-                document.getElementById('embedImageInput').files = [file];
+                document.getElementById('embedImageInput').files = e.dataTransfer.files;
             }
         });
 
-        addDragAndDropListeners(document.getElementById('fileDropArea'), (file) => {
+        const fileDropArea = document.getElementById('fileDropArea');
+        fileDropArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.add('dragging');
+        });
+        fileDropArea.addEventListener('dragleave', () => {
+            fileDropArea.classList.remove('dragging');
+        });
+        fileDropArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            fileDropArea.classList.remove('dragging');
+            const file = e.dataTransfer.files[0];
             displayFileDetails(file); 
             isFileUploaded = true;
-            document.getElementById('fileInput').files = [file];
+            document.getElementById('fileInput').files = e.dataTransfer.files;
             resetUI();
         });
 
@@ -326,8 +333,10 @@
             }
 
             document.getElementById('loadingIndicator').style.display = 'block';
-            updateProgressState(0, 'データ埋め込み中...');
+            displayProgress('データ埋め込み中...', 0);  
             document.getElementById('progressBarContainer').style.display = 'block'; 
+
+            updateProgressBar(0);
 
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -335,7 +344,7 @@
                 dataType = determineFileType(file.type); 
                 fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
-                updateProgressState(90, 'データ抽出中...');
+                displayProgress('データ抽出中...', 90);  
                 embedBinaryData(binaryData, dataType, fileExtension); 
             };
             reader.readAsArrayBuffer(file);
@@ -354,33 +363,36 @@
             return 'unknown';
         }
 
-        function incrementPixelIndex() {
-            pixelIndex += 1;
-            if ((pixelIndex + 1) % 4 === 0) {
-                pixelIndex += 1;  // アルファチャンネルをスキップ
-            }
-        }
-
         function embedBinaryData(binaryData, dataType, fileExtension) {
-            pixelIndex = 0;
+            let pixelIndex = 0;
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
-                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(dataLengthBinary[i]);
-                incrementPixelIndex();
+                const bit = parseInt(dataLengthBinary[i]);
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                }
             }
 
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
-                incrementPixelIndex();
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                }
             }
 
             for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    incrementPixelIndex();
+                    pixelIndex += 1;
+                    if ((pixelIndex + 1) % 4 === 0) {
+                        pixelIndex += 1;  // アルファチャンネルをスキップ
+                    }
                 }
             }
 
@@ -401,7 +413,10 @@
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                        incrementPixelIndex();
+                        pixelIndex += 1;
+                        if ((pixelIndex + 1) % 4 === 0) {
+                            pixelIndex += 1;  // アルファチャンネルをスキップ
+                        }
                     }
                 }
 
@@ -415,7 +430,10 @@
         }
 
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
-            updateProgressState(90, 'データ抽出中...');
+            displayProgress('データ抽出中...', 90);
+            updateProgressBar(90);
+
+            // 埋め込み後の画像からデータを再抽出
             let pixelIndex = 0;
 
             // データ長の抽出（32ビット）
@@ -423,7 +441,10 @@
             for (let i = 0; i < 32; i++) {
                 const bit = imgData.data[pixelIndex] & 1;
                 binaryLength += bit;
-                incrementPixelIndex();
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                }
             }
             const dataLength = parseInt(binaryLength, 2);
 
@@ -434,11 +455,15 @@
                 for (let j = 0; j < 8; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
                     byte += bit;
-                    incrementPixelIndex();
+                    pixelIndex += 1;
+                    if ((pixelIndex + 1) % 4 === 0) {
+                        pixelIndex += 1;  // アルファチャンネルをスキップ
+                    }
                 }
                 extractedBinaryData.push(parseInt(byte, 2));
             }
 
+            // データサイズをチェック
             const originalLength = originalBinaryData.length;
             const extractedLength = extractedBinaryData.length;
             const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
@@ -452,7 +477,7 @@
                 alert("データの埋め込みに失敗しました（誤差が3％を超えました）。");
             }
 
-            updateProgressState(99, 'データサイズチェック中...');
+            displayProgress('データサイズチェック中...', 99);
 
             setTimeout(() => {
                 if (sizeDifference <= 3) {
@@ -466,6 +491,23 @@
                     displayError("データの埋め込みに失敗しました。");
                 }
             }, 3000);
+        }
+        
+        function arraysEqual(a, b) {
+            if (a.length !== b.length) return false;
+            for (let i = 0; a.length > i; i++) if (a[i] !== b[i]) return false;
+            return true;
+        }
+
+        function calculateDiff(original, extracted) {
+            let diffMessage = '';
+            const length = Math.max(original.length, extracted.length);
+            for (let i = 0; i < length; i++) {
+                if (original[i] !== extracted[i]) {
+                    diffMessage += `位置 ${i}: 元データ ${original[i]} - 抽出データ ${extracted[i]}<br>`;
+                }
+            }
+            return diffMessage || 'データに違いはありません';
         }
 
         function downloadImage() {
