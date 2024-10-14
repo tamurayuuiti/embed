@@ -346,9 +346,7 @@
                 fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
                 displayProgress('データ抽出中...', 90);  
-                const parityData = addErrorCheckingData(binaryData);
-                displayProgress('データサイズチェック中...', 99);  
-                embedBinaryData(parityData, dataType, fileExtension); 
+                embedBinaryData(binaryData, dataType, fileExtension); 
             };
             reader.readAsArrayBuffer(file);
         }
@@ -364,36 +362,6 @@
             if (audioTypes.includes(mimeType)) return 'audio';
             if (pdfType.includes(mimeType)) return 'pdf';
             return 'unknown';
-        }
-
-        function addErrorCheckingData(binaryData) {
-            const parityData = [];
-            for (let i = 0; i < binaryData.length; i++) {
-                const byte = binaryData[i];
-                const parityBit = calculateParity(byte);
-                const hammingCode = calculateHammingCode(byte); 
-                parityData.push(byte);
-                parityData.push(parityBit);  
-                parityData.push(hammingCode);  
-            }
-            const checksum = calculateChecksum(parityData);  
-            parityData.push(checksum);
-            return new Uint8Array(parityData);
-        }
-
-        function calculateParity(byte) {
-            const binaryString = byte.toString(2).padStart(8, '0');
-            const numOnes = binaryString.split('').reduce((count, bit) => count + parseInt(bit), 0);
-            return numOnes % 2 === 0 ? 0 : 1; 
-        }
-
-        function calculateHammingCode(byte) {
-            const hammingCode = byte ^ 0xFF;  
-            return hammingCode;
-        }
-
-        function calculateChecksum(data) {
-            return data.reduce((sum, value) => sum + value, 0) % 256;  
         }
 
         function embedBinaryData(binaryData, dataType, fileExtension) {
@@ -492,89 +460,6 @@
                     displayError("データの埋め込みに失敗しました。");
                 }
             }, 3000);
-        }
-
-        function extractBinaryData() {
-            let pixelIndex = 0;
-            let binaryData = [];
-            pixelIndex += 4;
-
-            let binaryLength = '';
-            for (let i = 0; 32 > i; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                binaryLength += bit;
-                pixelIndex += 4;
-            }
-            const dataLength = parseInt(binaryLength, 2);
-
-            let extLengthBinary = '';
-            for (let i = 0; 8 > i; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                extLengthBinary += bit;
-                pixelIndex += 4;
-            }
-            const extLength = parseInt(extLengthBinary, 2);
-
-            let fileExtension = '';
-            for (let i = 0; extLength > i; i++) {
-                let charBinary = '';
-                for (let j = 0; 8 > j; j++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
-                    pixelIndex += 4;
-                }
-                fileExtension += String.fromCharCode(parseInt(charBinary, 2));
-            }
-
-            const chunkSize = 1000;  
-            let currentIndex = 0;
-            const bitsPerPixel = 3;
-
-            function extractChunk() {
-                const pixelEnd = Math.min(currentIndex + chunkSize, dataLength * bitsPerPixel);
-
-                for (let i = currentIndex; i < pixelEnd; i++) {
-                    let byte = '';
-                    for (let j = 0; bitsPerPixel > j; j++) {
-                        const bit = imgData.data[pixelIndex] & 1;
-                        byte += bit;
-                        pixelIndex += 1;
-                        if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
-                    }
-                    binaryData.push(parseInt(byte, 2));
-                }
-
-                const progress = Math.round((currentIndex / (dataLength * bitsPerPixel)) * 9) + 90;
-                updateProgressBar(progress);
-
-                currentIndex += chunkSize;
-
-                if (currentIndex < dataLength * bitsPerPixel) {
-                    setTimeout(extractChunk, 0);
-                } else {
-                    finalizeExtraction(binaryData, isHighCapacity, fileExtension);
-                }
-            }
-
-            extractChunk();
-        }
-
-        function finalizeExtraction(binaryData, isFile, fileExtension) {
-            if (isFile) {
-                const fileBlob = new Blob([new Uint8Array(binaryData)], { type: 'application/octet-stream' });
-                const fileUrl = URL.createObjectURL(fileBlob);
-                const link = document.createElement('a');
-                link.href = fileUrl;
-                link.download = `extracted.${fileExtension}`;
-                link.click();
-                URL.revokeObjectURL(fileUrl);
-            } else {
-                const textDecoder = new TextDecoder();
-                const extractedText = textDecoder.decode(new Uint8Array(binaryData));
-                document.getElementById('extractedData').innerText = extractedText;
-            }
-
-            updateProgressBar(100);
         }
 
         function arraysEqual(a, b) {
