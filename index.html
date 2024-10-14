@@ -72,10 +72,6 @@
             </div>
             <p id="uploadedImageName" class="info"></p>
             <p id="embedFileInfo" class="info">埋め込み可能ファイル形式: .txt, .json, .csv, .png, .jpg, .jpeg, .gif, .pdf, .wav</p>
-            <select id="embedMode" onchange="updateCapacity()">
-                <option value="high_quality">高品質モード</option>
-                <option value="high_capacity">高容量モード</option>
-            </select>
             <div id="fileInputContainer">
                 <div id="fileDropArea">
                     <p>ここにファイルをドラッグ＆ドロップしてください</p>
@@ -126,7 +122,6 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
-        let embedMode = 'high_quality'; 
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -244,13 +239,7 @@
 
         function updateCapacity() {
             const pixelCount = imgData.width * imgData.height;
-            embedMode = document.getElementById('embedMode').value;
-
-            if (embedMode === 'high_quality') {
-                maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
-            } else {
-                maxDataBytes = Math.floor((pixelCount * 9) / 8) - 100;  // 高容量モード: 1ピクセル9ビット
-            }
+            maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
 
             document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);
 
@@ -410,8 +399,8 @@
         function embedBinaryData(binaryData, dataType, fileExtension) {
             let pixelIndex = 0;
 
-            const embedModeBinary = embedMode === 'high_quality' ? 0 : 1;
-            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | embedModeBinary;
+            // 高品質モードのビットフラグを設定
+            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE);
             pixelIndex += 4;  // アルファチャンネルをスキップ
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
@@ -446,7 +435,7 @@
                     return;
                 }
 
-                const bitsPerPixel = embedMode === 'high_quality' ? 3 : 9;
+                const bitsPerPixel = 3;
 
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
@@ -544,7 +533,7 @@
 
             const chunkSize = 1000;  
             let currentIndex = 0;
-            const bitsPerPixel = isHighCapacity ? 9 : 3;
+            const bitsPerPixel = 3;
 
             function extractChunk() {
                 const pixelEnd = Math.min(currentIndex + chunkSize, dataLength * bitsPerPixel);
