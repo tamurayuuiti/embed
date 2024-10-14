@@ -371,20 +371,29 @@
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
-                pixelIndex += 4;  // アルファチャンネルをスキップ
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                }
             }
 
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
-                pixelIndex += 4;  // アルファチャンネルをスキップ
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                }
             }
 
             for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
-                    pixelIndex += 4;  // アルファチャンネルをスキップ
+                    pixelIndex += 1;
+                    if ((pixelIndex + 1) % 4 === 0) {
+                        pixelIndex += 1;  // アルファチャンネルをスキップ
+                    }
                 }
             }
 
@@ -404,10 +413,10 @@
                 for (let i = startIndex; i < Math.min(startIndex + embedChunkSize, binaryData.length); i++) {
                     const byte = binaryData[i].toString(2).padStart(8, '0');
                     for (let bit of byte) {
-                        for (let j = 0; j < bitsPerPixel; j++) {
-                            imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit[j % bitsPerPixel]);
-                            pixelIndex += 1;
-                            if ((pixelIndex + 1) % 4 === 0) pixelIndex++;  // アルファチャンネルをスキップ
+                        imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                        pixelIndex += 1;
+                        if ((pixelIndex + 1) % 4 === 0) {
+                            pixelIndex += 1;  // アルファチャンネルをスキップ
                         }
                     }
                 }
