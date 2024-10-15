@@ -115,13 +115,15 @@
         </div>
     </div>
 
-   <script>
+    <script>
         let imgData = null;
         let maxDataBytes = 0;
         let uploadedFileName = '';
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
+        let startTime = 0; // ストップウォッチの開始時間
+        let elapsedTime = 0; // 経過時間
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -132,6 +134,7 @@
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
             document.getElementById('progressMessage').innerText = '';
+            document.getElementById('elapsedTimeDisplay').innerText = ''; // 経過時間のリセット
         }
 
         function validateImageFile(file) {
@@ -183,6 +186,7 @@
 
             if (percent === 100) {
                 setTimeout(displayImagePreviewAndDownload, 1200);
+                stopStopwatch(); // 経過時間の計測終了
             }
         }
 
@@ -336,6 +340,7 @@
             displayProgress('データ埋め込み中...', 0);  
             document.getElementById('progressBarContainer').style.display = 'block'; 
 
+            startStopwatch(); // 埋め込み開始時にタイマーを開始
             updateProgressBar(0);
 
             const reader = new FileReader();
@@ -352,7 +357,7 @@
 
         function determineFileType(mimeType) {
             const textTypes = ['text/plain', 'application/json', 'text/csv'];
-            const imageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image/heif'];
+            const imageTypes = ['image/png', 'image/jpeg', 'image/gif', 'image.heif'];
             const audioTypes = ['audio/wav'];
             const pdfType = ['application/pdf'];
 
@@ -456,8 +461,8 @@
                     const extractedLength = extractedBinaryData.length;
                     const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
 
-                    console.log(`元のデータサイズ: ${originalLength} バイト`);
-                    console.log(`抽出されたデータサイズ: ${extractedLength} バイト`);
+                    console.log(`元のデータサイズ: ${formatBytes(originalLength)}`); // 修正箇所: 元のデータサイズをKB/MBで表示
+                    console.log(`抽出されたデータサイズ: ${formatBytes(extractedLength)}`); // 修正箇所: 抽出されたデータサイズをKB/MBで表示
                     console.log(`誤差: ${sizeDifference.toFixed(2)}%`);
 
                     displayProgress('データサイズチェック中...', 99);
@@ -537,6 +542,29 @@
         function closeModal() {
             document.getElementById('imageModal').style.display = 'none';
         }
+
+        // ストップウォッチ関連の処理
+        function startStopwatch() {
+            startTime = new Date().getTime(); // 開始時刻を記録
+            elapsedTime = 0; // 経過時間をリセット
+            document.getElementById('elapsedTimeDisplay').innerText = "経過時間: 0.00秒"; // 初期表示
+
+            function updateElapsedTime() {
+                if (elapsedTime === -1) return; // 停止後は更新しない
+                const currentTime = new Date().getTime();
+                elapsedTime = ((currentTime - startTime) / 1000).toFixed(2); // 経過時間を秒で計算
+                document.getElementById('elapsedTimeDisplay').innerText = `経過時間: ${elapsedTime}秒`; // 表示を更新
+                requestAnimationFrame(updateElapsedTime); // 次のフレームで再更新
+            }
+
+            updateElapsedTime(); // タイマー更新を開始
+        }
+
+        function stopStopwatch() {
+            elapsedTime = -1; // タイマーの停止
+        }
     </script>
+
+    <div id="elapsedTimeDisplay"></div> <!-- 経過時間表示エリア -->
 </body>
 </html>
