@@ -115,7 +115,7 @@
         </div>
     </div>
 
-    <script>
+   <script>
         let imgData = null;
         let maxDataBytes = 0;
         let uploadedFileName = '';
@@ -429,7 +429,7 @@
             embedChunks(0); 
         }
 
-        // 修正箇所: データ抽出を1000ピクセルずつ行う処理の追加
+        // 修正箇所: データ抽出を1000ピクセルずつ行い、進捗バーを90%から99%に設定
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...', 90);
             updateProgressBar(90);
@@ -464,7 +464,7 @@
 
                     setTimeout(() => {
                         if (sizeDifference <= 3) {
-                            updateProgressBar(100);
+                            updateProgressBar(100); // 修正箇所: データチェック完了後100%にする
                             displayProgress('データ埋め込み完了', 100);
                             document.getElementById('loadingIndicator').style.display = 'none';
                         } else {
@@ -472,6 +472,7 @@
                             displaySizeDifference(sizeDifference.toFixed(2));
                             document.getElementById('loadingIndicator').style.display = 'none';
                             displayError("データの埋め込みに失敗しました。");
+                            alert("データの埋め込みに失敗しました（誤差が3％を超えました）。"); // 修正箇所: 3%の誤差でエラーメッセージをポップアップ
                         }
                     }, 3000);
                     return;
@@ -490,7 +491,7 @@
                     extractedBinaryData.push(parseInt(byte, 2));
                 }
 
-                const progress = Math.round((startIndex / dataLength) * 90);
+                const progress = Math.round((startIndex / dataLength) * 9) + 90; // 修正箇所: 90%から99%の範囲で進捗バーを更新
                 updateProgressBar(progress);
 
                 setTimeout(() => extractChunk(startIndex + chunkSize), 0);
