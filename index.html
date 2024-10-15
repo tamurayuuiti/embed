@@ -429,58 +429,74 @@
             embedChunks(0); 
         }
 
+        // 修正箇所: データ抽出を1000ピクセルずつ行う処理の追加
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...', 90);
             updateProgressBar(90);
 
             let pixelIndex = 0;
+
             let binaryLength = '';
-            
-            function extractChunks(startIndex, endIndex) {
-                if (startIndex >= endIndex) {
-                    // データ抽出完了時の処理
-                    const dataLength = parseInt(binaryLength, 2);
-                    const extractedBinaryData = [];
-                    for (let i = 0; i < dataLength; i++) {
-                        let byte = '';
-                        for (let j = 0; j < 8; j++) {
-                            const bit = imgData.data[pixelIndex] & 1;
-                            byte += bit;
-                            pixelIndex += 1;
-                            if ((pixelIndex + 1) % 4 === 0) {
-                                pixelIndex += 1;  // アルファチャンネルをスキップ
-                            }
-                        }
-                        extractedBinaryData.push(parseInt(byte, 2));
-                    }
-                    // データの再確認とサイズチェック
+            for (let i = 0; i < 32; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                binaryLength += bit;
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1; 
+                }
+            }
+            const dataLength = parseInt(binaryLength, 2);
+
+            const extractedBinaryData = [];
+            const chunkSize = 1000; // 1000ピクセルずつ抽出
+
+            function extractChunk(startIndex) {
+                if (startIndex >= dataLength) {
                     const originalLength = originalBinaryData.length;
                     const extractedLength = extractedBinaryData.length;
                     const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
 
-                    if (sizeDifference > 3) {
-                        alert("データの埋め込みに失敗しました（誤差が3％を超えました）。");
-                    }
+                    console.log(`元のデータサイズ: ${originalLength} バイト`);
+                    console.log(`抽出されたデータサイズ: ${extractedLength} バイト`);
+                    console.log(`誤差: ${sizeDifference.toFixed(2)}%`);
 
                     displayProgress('データサイズチェック中...', 99);
-                    updateProgressBar(99);
+
+                    setTimeout(() => {
+                        if (sizeDifference <= 3) {
+                            updateProgressBar(100);
+                            displayProgress('データ埋め込み完了', 100);
+                            document.getElementById('loadingIndicator').style.display = 'none';
+                        } else {
+                            displayProgress('データエラーチェック中...', 99);
+                            displaySizeDifference(sizeDifference.toFixed(2));
+                            document.getElementById('loadingIndicator').style.display = 'none';
+                            displayError("データの埋め込みに失敗しました。");
+                        }
+                    }, 3000);
                     return;
                 }
 
-                // 1000ピクセルごとに処理
-                for (let i = startIndex; i < Math.min(endIndex, imgData.data.length); i++) {
-                    const bit = imgData.data[pixelIndex] & 1;
-                    binaryLength += bit;
-                    pixelIndex += 1;
-                    if ((pixelIndex + 1) % 4 === 0) {
+                for (let i = startIndex; i < Math.min(startIndex + chunkSize, dataLength); i++) {
+                    let byte = '';
+                    for (let j = 0; j < 8; j++) {
+                        const bit = imgData.data[pixelIndex] & 1;
+                        byte += bit;
                         pixelIndex += 1;
+                        if ((pixelIndex + 1) % 4 === 0) {
+                            pixelIndex += 1; 
+                        }
                     }
+                    extractedBinaryData.push(parseInt(byte, 2));
                 }
 
-                setTimeout(() => extractChunks(startIndex + 1000, endIndex), 0);
+                const progress = Math.round((startIndex / dataLength) * 90);
+                updateProgressBar(progress);
+
+                setTimeout(() => extractChunk(startIndex + chunkSize), 0);
             }
 
-            extractChunks(0, imgData.data.length);
+            extractChunk(0); 
         }
 
         function arraysEqual(a, b) {
