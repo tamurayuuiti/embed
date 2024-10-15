@@ -433,66 +433,56 @@
             displayProgress('データ抽出中...', 90);
             updateProgressBar(90);
 
-            // 埋め込み後の画像からデータを再抽出
             let pixelIndex = 0;
-
-            // データ長の抽出（32ビット）
             let binaryLength = '';
-            for (let i = 0; i < 32; i++) {
-                const bit = imgData.data[pixelIndex] & 1;
-                binaryLength += bit;
-                pixelIndex += 1;
-                if ((pixelIndex + 1) % 4 === 0) {
-                    pixelIndex += 1;  // アルファチャンネルをスキップ
-                }
-            }
-            const dataLength = parseInt(binaryLength, 2);
+            
+            function extractChunks(startIndex, endIndex) {
+                if (startIndex >= endIndex) {
+                    // データ抽出完了時の処理
+                    const dataLength = parseInt(binaryLength, 2);
+                    const extractedBinaryData = [];
+                    for (let i = 0; i < dataLength; i++) {
+                        let byte = '';
+                        for (let j = 0; j < 8; j++) {
+                            const bit = imgData.data[pixelIndex] & 1;
+                            byte += bit;
+                            pixelIndex += 1;
+                            if ((pixelIndex + 1) % 4 === 0) {
+                                pixelIndex += 1;  // アルファチャンネルをスキップ
+                            }
+                        }
+                        extractedBinaryData.push(parseInt(byte, 2));
+                    }
+                    // データの再確認とサイズチェック
+                    const originalLength = originalBinaryData.length;
+                    const extractedLength = extractedBinaryData.length;
+                    const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
 
-            // データ本体の再抽出
-            const extractedBinaryData = [];
-            for (let i = 0; i < dataLength; i++) {
-                let byte = '';
-                for (let j = 0; j < 8; j++) {
+                    if (sizeDifference > 3) {
+                        alert("データの埋め込みに失敗しました（誤差が3％を超えました）。");
+                    }
+
+                    displayProgress('データサイズチェック中...', 99);
+                    updateProgressBar(99);
+                    return;
+                }
+
+                // 1000ピクセルごとに処理
+                for (let i = startIndex; i < Math.min(endIndex, imgData.data.length); i++) {
                     const bit = imgData.data[pixelIndex] & 1;
-                    byte += bit;
+                    binaryLength += bit;
                     pixelIndex += 1;
                     if ((pixelIndex + 1) % 4 === 0) {
-                        pixelIndex += 1;  // アルファチャンネルをスキップ
+                        pixelIndex += 1;
                     }
                 }
-                extractedBinaryData.push(parseInt(byte, 2));
+
+                setTimeout(() => extractChunks(startIndex + 1000, endIndex), 0);
             }
 
-            // データサイズをチェック
-            const originalLength = originalBinaryData.length;
-            const extractedLength = extractedBinaryData.length;
-            const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
-
-            // コンソールに進捗を表示（サイズと誤差のみ）
-            console.log(`元のデータサイズ: ${originalLength} バイト`);
-            console.log(`抽出されたデータサイズ: ${extractedLength} バイト`);
-            console.log(`誤差: ${sizeDifference.toFixed(2)}%`);
-
-            if (sizeDifference > 3) {
-                alert("データの埋め込みに失敗しました（誤差が3％を超えました）。");
-            }
-
-            displayProgress('データサイズチェック中...', 99);
-
-            setTimeout(() => {
-                if (sizeDifference <= 3) {
-                    updateProgressBar(100);
-                    displayProgress('データ埋め込み完了', 100);
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                } else {
-                    displayProgress('データエラーチェック中...', 99);
-                    displaySizeDifference(sizeDifference.toFixed(2));
-                    document.getElementById('loadingIndicator').style.display = 'none';
-                    displayError("データの埋め込みに失敗しました。");
-                }
-            }, 3000);
+            extractChunks(0, imgData.data.length);
         }
-        
+
         function arraysEqual(a, b) {
             if (a.length !== b.length) return false;
             for (let i = 0; a.length > i; i++) if (a[i] !== b[i]) return false;
