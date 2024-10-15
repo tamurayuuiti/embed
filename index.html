@@ -55,6 +55,18 @@
         /* モーダル表示 */
         .modal { display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%; background-color: rgba(0, 0, 0, 0.8); align-items: center; justify-content: center; }
         .modal img { max-width: 90%; max-height: 90%; box-shadow: 0 0 10px white; }
+
+        /* 進捗メッセージとストップウォッチの配置調整 */
+        #progressContainer {
+            display: flex;
+            align-items: center;
+            margin-top: 10px;
+        }
+
+        #elapsedTimeDisplay {
+            margin-left: 10px;
+            font-weight: bold;
+        }
     </style>
 </head>
 <body>
@@ -122,8 +134,8 @@
         let isImageUploaded = false; 
         let isFileUploaded = false;
         let originalBinaryData = null;
-        let startTime = 0; // ストップウォッチの開始時間
-        let elapsedTime = 0; // 経過時間
+        let startTime = 0; 
+        let elapsedTime = 0; 
 
         function resetUI() {
             document.getElementById('outputPreviewImage').src = '';
@@ -134,7 +146,7 @@
             document.getElementById('sizeDifference').innerText = '';
             document.getElementById('progressBarContainer').style.display = 'none';
             document.getElementById('progressMessage').innerText = '';
-            document.getElementById('elapsedTimeDisplay').innerText = ''; // 経過時間のリセット
+            document.getElementById('elapsedTimeDisplay').innerText = ''; 
         }
 
         function validateImageFile(file) {
@@ -185,8 +197,8 @@
             displayProgress("Progress", percent);
 
             if (percent === 100) {
-                setTimeout(displayImagePreviewAndDownload, 1200);
-                stopStopwatch(); // 経過時間の計測終了
+                setTimeout(displayImagePreviewAndDownload, 1150);
+                stopStopwatch(); 
             }
         }
 
@@ -242,7 +254,7 @@
 
         function updateCapacity() {
             const pixelCount = imgData.width * imgData.height;
-            maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100;  // 高品質モード: 1ピクセル3ビット
+            maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100; 
 
             document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);
 
@@ -340,7 +352,7 @@
             displayProgress('データ埋め込み中...', 0);  
             document.getElementById('progressBarContainer').style.display = 'block'; 
 
-            startStopwatch(); // 埋め込み開始時にタイマーを開始
+            startStopwatch(); 
             updateProgressBar(0);
 
             const reader = new FileReader();
@@ -377,7 +389,7 @@
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
                 pixelIndex += 1;
                 if ((pixelIndex + 1) % 4 === 0) {
-                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                    pixelIndex += 1;  
                 }
             }
 
@@ -386,7 +398,7 @@
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
                 pixelIndex += 1;
                 if ((pixelIndex + 1) % 4 === 0) {
-                    pixelIndex += 1;  // アルファチャンネルをスキップ
+                    pixelIndex += 1;  
                 }
             }
 
@@ -396,7 +408,7 @@
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 1;
                     if ((pixelIndex + 1) % 4 === 0) {
-                        pixelIndex += 1;  // アルファチャンネルをスキップ
+                        pixelIndex += 1;  
                     }
                 }
             }
@@ -420,7 +432,7 @@
                         imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                         pixelIndex += 1;
                         if ((pixelIndex + 1) % 4 === 0) {
-                            pixelIndex += 1;  // アルファチャンネルをスキップ
+                            pixelIndex += 1; 
                         }
                     }
                 }
@@ -434,7 +446,6 @@
             embedChunks(0); 
         }
 
-        // 修正箇所: データ抽出を1000ピクセルずつ行い、進捗バーを90%から99%に設定
         function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
             displayProgress('データ抽出中...', 90);
             updateProgressBar(90);
@@ -453,7 +464,7 @@
             const dataLength = parseInt(binaryLength, 2);
 
             const extractedBinaryData = [];
-            const chunkSize = 1000; // 1000ピクセルずつ抽出
+            const chunkSize = 1000; 
 
             function extractChunk(startIndex) {
                 if (startIndex >= dataLength) {
@@ -461,15 +472,15 @@
                     const extractedLength = extractedBinaryData.length;
                     const sizeDifference = Math.abs((originalLength - extractedLength) / originalLength * 100);
 
-                    console.log(`元のデータサイズ: ${formatBytes(originalLength)}`); // 修正箇所: 元のデータサイズをKB/MBで表示
-                    console.log(`抽出されたデータサイズ: ${formatBytes(extractedLength)}`); // 修正箇所: 抽出されたデータサイズをKB/MBで表示
+                    console.log(`元のデータサイズ: ${formatBytes(originalLength)}`);
+                    console.log(`抽出されたデータサイズ: ${formatBytes(extractedLength)}`);
                     console.log(`誤差: ${sizeDifference.toFixed(2)}%`);
 
                     displayProgress('データサイズチェック中...', 99);
 
                     setTimeout(() => {
                         if (sizeDifference <= 3) {
-                            updateProgressBar(100); // 修正箇所: データチェック完了後100%にする
+                            updateProgressBar(100); 
                             displayProgress('データ埋め込み完了', 100);
                             document.getElementById('loadingIndicator').style.display = 'none';
                         } else {
@@ -477,7 +488,7 @@
                             displaySizeDifference(sizeDifference.toFixed(2));
                             document.getElementById('loadingIndicator').style.display = 'none';
                             displayError("データの埋め込みに失敗しました。");
-                            alert("データの埋め込みに失敗しました（誤差が3％を超えました）。"); // 修正箇所: 3%の誤差でエラーメッセージをポップアップ
+                            alert("データの埋め込みに失敗しました（誤差が3％を超えました）。");
                         }
                     }, 3000);
                     return;
@@ -496,7 +507,7 @@
                     extractedBinaryData.push(parseInt(byte, 2));
                 }
 
-                const progress = Math.round((startIndex / dataLength) * 9) + 90; // 修正箇所: 90%から99%の範囲で進捗バーを更新
+                const progress = Math.round((startIndex / dataLength) * 9) + 90;
                 updateProgressBar(progress);
 
                 setTimeout(() => extractChunk(startIndex + chunkSize), 0);
@@ -543,31 +554,30 @@
             document.getElementById('imageModal').style.display = 'none';
         }
 
-        // ストップウォッチ関連の処理
         function startStopwatch() {
-            startTime = new Date().getTime(); // 開始時刻を記録
-            elapsedTime = 0; // 経過時間をリセット
-            document.getElementById('elapsedTimeDisplay').innerText = "経過時間: 0.00秒"; // 初期表示
+            startTime = new Date().getTime(); 
+            elapsedTime = 0; 
+            document.getElementById('elapsedTimeDisplay').innerText = "経過時間: 0.00秒"; 
 
             function updateElapsedTime() {
-                if (elapsedTime === -1) return; // 停止後は更新しない
+                if (elapsedTime === -1) return; 
                 const currentTime = new Date().getTime();
-                elapsedTime = ((currentTime - startTime) / 1000).toFixed(2); // 経過時間を秒で計算
-                document.getElementById('elapsedTimeDisplay').innerText = `経過時間: ${elapsedTime}秒`; // 表示を更新
-                requestAnimationFrame(updateElapsedTime); // 次のフレームで再更新
+                elapsedTime = ((currentTime - startTime) / 1000).toFixed(2); 
+                document.getElementById('elapsedTimeDisplay').innerText = `経過時間: ${elapsedTime}秒`; 
+                requestAnimationFrame(updateElapsedTime); 
             }
 
-            updateElapsedTime(); // タイマー更新を開始
+            updateElapsedTime(); 
         }
 
         function stopStopwatch() {
-            elapsedTime = -1; // タイマーの停止
+            elapsedTime = -1; 
         }
     </script>
 
     <div id="progressContainer">
         <span id="progressMessage"></span>
-        <span id="elapsedTimeDisplay" style="margin-left: 10px;"></span> <!-- 経過時間を進捗メッセージの右横に表示 -->
+        <span id="elapsedTimeDisplay" style="margin-left: 10px;"></span> 
     </div>
 </body>
 </html>
