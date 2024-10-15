@@ -362,7 +362,9 @@
                 fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
                 displayProgress('データ抽出中...', 90);  
-                embedBinaryData(binaryData, dataType, fileExtension); 
+                setTimeout(() => {
+                    embedBinaryData(binaryData, dataType, fileExtension);
+                }, 1000);  // 1秒の遅延を追加
             };
             reader.readAsArrayBuffer(file);
         }
