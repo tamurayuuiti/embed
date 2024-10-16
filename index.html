@@ -21,7 +21,7 @@
         .image-preview img { max-width: 100%; max-height: 400px; height: auto; border: 1px solid #ccc; margin-top: 10px; padding: 10px; background-color: #f1f1f1; display: block; margin-left: auto; margin-right: auto; box-sizing: border-box; }
         .image-preview-container { display: flex; flex-direction: column; }
         @media (min-width: 768px) { .image-preview-container { flex-direction: row; justify-content: space-around; } .image-preview { width: 48%; } }
-        .info { font-size: 14px; color: #666; margin-top: 5px; } /* 進捗メッセージの色とサイズ */
+        .info { font-size: 14px; color: #666; margin-top: 5px; } 
         .details { font-size: 14px; margin-top: 10px; color: #333; }
         .warning { color: red; }
         #dropArea, #fileDropArea { border: 2px dashed #ccc; border-radius: 5px; padding: 20px; text-align: center; cursor: pointer; }
@@ -60,14 +60,15 @@
             font-size: 14px;
             font-weight: bold;
             color: #666; 
-            line-height: 30px; /* 進捗メッセージの上下幅を設定 */
+            line-height: 30px;
+            margin-right: 20px; /* バーとの間の幅を定義 */
         }
 
         #elapsedTimeDisplay {
-            margin-left: 150px;
             font-weight: bold;
-            color: #666; /* ストップウォッチの色を進捗メッセージと統一 */
-            line-height: 30px; /* 上下幅を進捗メッセージと揃える */
+            color: #666;
+            line-height: 30px;
+            margin-left: 20px; /* バーとの間の幅を定義 */
         }
     </style>
 </head>
@@ -103,15 +104,14 @@
             </div>
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
-                    <span id="progressBarText">0.0%</span> <!-- 小数点1位まで表示 -->
+                    <span id="progressBarText">0.0%</span>
                 </div>
                 <span id="progressMessage" class="info"></span>
             </div>
 
-            <!-- ストップウォッチの表示位置を修正 -->
             <div id="progressContainer">
                 <span id="progressMessage"></span>
-                <span id="elapsedTimeDisplay" class="info" style="margin-left: 150px;"></span> <!-- ストップウォッチもinfoクラスを追加して統一 -->
+                <span id="elapsedTimeDisplay" class="info"></span>
             </div>
 
             <div id="embedImageDetails" class="details"></div>
@@ -200,7 +200,7 @@
         function updateProgressBar(percent) {
             const progressBar = document.getElementById('progressBar');
             const progressBarText = document.getElementById('progressBarText');
-            const formattedPercent = percent.toFixed(1); // 小数点1位まで表示
+            const formattedPercent = percent.toFixed(1);
 
             progressBar.style.width = formattedPercent + '%';
             progressBarText.textContent = formattedPercent + '%';
