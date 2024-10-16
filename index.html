@@ -59,7 +59,7 @@
         /* 進捗メッセージとストップウォッチの配置調整 */
         #progressContainer {
             display: flex;
-            align-items: center;
+            align-items: center; /* 高さを合わせる */
             margin-top: 10px;
         }
 
@@ -70,9 +70,9 @@
         }
 
         #elapsedTimeDisplay {
-            margin-left: 10px;
-            font-size: 14px; /* 進捗メッセージと同じサイズに調整 */
-            font-weight: bold; /* 進捗メッセージと同じ太さに調整 */
+            margin-left: 20px; /* 進捗メッセージからの横のずれ */
+            font-size: 14px;
+            font-weight: bold;
         }
     </style>
 </head>
@@ -116,7 +116,7 @@
             <!-- ストップウォッチを進捗バーの下に移動 -->
             <div id="progressContainer">
                 <span id="progressMessage"></span>
-                <span id="elapsedTimeDisplay" style="margin-left: 10px;"></span> 
+                <span id="elapsedTimeDisplay" style="margin-left: 20px;"></span> <!-- 横にずらすためのmargin-left調整 -->
             </div>
 
             <div id="embedImageDetails" class="details"></div>
@@ -455,7 +455,7 @@
                     }
                 }
 
-                const progress = Math.round((startIndex / binaryData.length) * 90);
+                const progress = (startIndex / binaryData.length) * 90;
                 updateProgressBar(progress);
 
                 setTimeout(() => embedChunks(startIndex + embedChunkSize), 0);
@@ -525,7 +525,7 @@
                     extractedBinaryData.push(parseInt(byte, 2));
                 }
 
-                const progress = Math.round((startIndex / dataLength) * 9) + 90;
+                const progress = (startIndex / dataLength) * 9 + 90;
                 updateProgressBar(progress);
 
                 setTimeout(() => extractChunk(startIndex + chunkSize), 0);
