@@ -65,11 +65,14 @@
 
         #progressMessage {
             flex-grow: 1; /* 進捗メッセージを左側に固定 */
+            font-size: 14px;
+            font-weight: bold;
         }
 
         #elapsedTimeDisplay {
             margin-left: 10px;
-            font-weight: bold;
+            font-size: 14px; /* 進捗メッセージと同じサイズに調整 */
+            font-weight: bold; /* 進捗メッセージと同じ太さに調整 */
         }
     </style>
 </head>
@@ -105,7 +108,7 @@
             </div>
             <div id="progressBarContainer" style="display:none;">
                 <div id="progressBar">
-                    <span id="progressBarText">0%</span>
+                    <span id="progressBarText">0.0%</span> <!-- 小数点1位まで表示 -->
                 </div>
                 <span id="progressMessage" class="info"></span>
             </div>
@@ -202,8 +205,10 @@
         function updateProgressBar(percent) {
             const progressBar = document.getElementById('progressBar');
             const progressBarText = document.getElementById('progressBarText');
-            progressBar.style.width = percent + '%';
-            progressBarText.textContent = percent + '%';
+            const formattedPercent = percent.toFixed(1); // 小数点1位まで表示
+
+            progressBar.style.width = formattedPercent + '%';
+            progressBarText.textContent = formattedPercent + '%';
 
             displayProgress("Progress", percent);
 
