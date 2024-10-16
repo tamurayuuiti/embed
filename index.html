@@ -105,6 +105,13 @@
                 </div>
                 <span id="progressMessage" class="info"></span>
             </div>
+
+            <!-- ストップウォッチを進捗バーの下に移動 -->
+            <div id="progressContainer">
+                <span id="progressMessage"></span>
+                <span id="elapsedTimeDisplay" style="margin-left: 10px;"></span> 
+            </div>
+
             <div id="embedImageDetails" class="details"></div>
             <div class="image-preview-container">
                 <div class="image-preview" id="embedImagePreview" style="display:none;">
@@ -364,7 +371,7 @@
                 displayProgress('データ抽出中...', 90);  
                 setTimeout(() => {
                     embedBinaryData(binaryData, dataType, fileExtension);
-                }, 1000);  // 1秒の遅延を追加
+                }, 1000);  
             };
             reader.readAsArrayBuffer(file);
         }
@@ -577,9 +584,5 @@
         }
     </script>
 
-    <div id="progressContainer">
-        <span id="progressMessage"></span>
-        <span id="elapsedTimeDisplay" style="margin-left: 10px;"></span> 
-    </div>
 </body>
 </html>
