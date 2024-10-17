@@ -395,13 +395,16 @@
             startStopwatch(); 
             updateProgressBar(0);
 
-            fileName = file.name;  
+            // ファイル名と拡張子を分離
+            const fullFileName = file.name;
+            const lastDotIndex = fullFileName.lastIndexOf('.');
+            fileName = lastDotIndex !== -1 ? fullFileName.substring(0, lastDotIndex) : fullFileName;
+            fileExtension = lastDotIndex !== -1 ? fullFileName.substring(lastDotIndex + 1) : ''; 
 
             const reader = new FileReader();
             reader.onload = function(event) {
                 binaryData = new Uint8Array(event.target.result); 
                 dataType = determineFileType(file.type); 
-                fileExtension = file.name.split('.').pop(); 
                 originalBinaryData = binaryData;
                 displayProgress('データ抽出中...', 90);  
                 setTimeout(() => {
@@ -427,7 +430,7 @@
         function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
             let pixelIndex = 0;
 
-            // ファイル名のバイナリデータをUTF-8に変換
+            // ファイル名のバイナリデータをUTF-8に変換（拡張子なし）
             const fileNameBinary = utf8ToBinaryString(fileName);
             const fileNameLengthBinary = fileNameBinary.length.toString(2).padStart(16, '0');
             
@@ -453,6 +456,7 @@
                 }
             }
 
+            // データサイズの埋め込み
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
                 const bit = parseInt(dataLengthBinary[i]);
@@ -463,6 +467,7 @@
                 }
             }
 
+            // 拡張子の長さをバイナリとして埋め込む
             const extLengthBinary = fileExtension.length.toString(2).padStart(8, '0');
             for (let i = 0; i < extLengthBinary.length; i++) {
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(extLengthBinary[i]);
@@ -472,6 +477,7 @@
                 }
             }
 
+            // 拡張子自体を埋め込む
             for (let i = 0; i < fileExtension.length; i++) {
                 const charBinary = fileExtension[i].charCodeAt(0).toString(2).padStart(8, '0');
                 for (let bit of charBinary) {
