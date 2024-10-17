@@ -551,6 +551,10 @@
 
             const extractedFileName = binaryStringToUtf8(new Uint8Array(extractedFileNameBinary));
 
+            // 埋め込み元のファイル名と抽出されたファイル名をコンソールに表示
+            console.log(`埋め込み元のファイル名: ${originalFileName}`);
+            console.log(`抽出されたファイル名: ${extractedFileName}`);
+
             // ファイル名の一致チェック
             if (extractedFileName !== originalFileName) {
                 alert("ファイル名が一致しません！");
