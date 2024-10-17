@@ -67,7 +67,7 @@
             margin-left: 150px;
             font-weight: bold;
             color: #666; 
-            line-height: 30px;
+            line-height: 30px; 
         }
     </style>
 </head>
@@ -215,14 +215,14 @@
                     if (currentPercent >= 100) {
                         currentPercent = 100;
                         clearInterval(interval);
-                        displayImagePreviewAndDownload();  // 100%になった後に1.1秒後表示
-                        stopStopwatch();  // ストップウォッチを停止
-                        document.getElementById('loadingIndicator').style.display = 'none';  // 回転インジケータを非表示に
+                        displayImagePreviewAndDownload();  
+                        stopStopwatch();  
+                        document.getElementById('loadingIndicator').style.display = 'none';  
                     }
                     const formattedProgress = currentPercent.toFixed(1);
                     progressBar.style.width = formattedProgress + '%';
                     progressBarText.textContent = formattedProgress + '%';
-                }, 15); // 1.5秒で進むために15msごとに0.1%増加
+                }, 15); 
             }
         }
 
@@ -230,7 +230,7 @@
             setTimeout(() => {
                 document.getElementById('outputImagePreview').style.display = 'block';
                 document.getElementById('downloadButton').style.display = 'inline-block';
-            }, 1100);  // 100%になった後、1.1秒後に表示
+            }, 1100);  
         }
 
         function formatBytes(bytes) {
@@ -280,7 +280,7 @@
 
         function updateCapacity() {
             const pixelCount = imgData.width * imgData.height;
-            maxDataBytes = Math.floor((pixelCount * 3) / 8) - 100; 
+            maxDataBytes = Math.floor((pixelCount * 3) / 8) - 200; // 200バイトに変更
 
             document.getElementById('maxCapacityValue').innerText = formatBytes(maxDataBytes);
 
@@ -357,6 +357,7 @@
             let binaryData;
             let dataType;
             let fileExtension = '';
+            let fileName = ''; // ファイル名の変数
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
@@ -381,6 +382,8 @@
             startStopwatch(); 
             updateProgressBar(0);
 
+            fileName = file.name;  // ファイル名を取得
+
             const reader = new FileReader();
             reader.onload = function(event) {
                 binaryData = new Uint8Array(event.target.result); 
@@ -389,7 +392,7 @@
                 originalBinaryData = binaryData;
                 displayProgress('データ抽出中...', 90);  
                 setTimeout(() => {
-                    embedBinaryData(binaryData, dataType, fileExtension);
+                    embedBinaryData(binaryData, dataType, fileExtension, fileName); // ファイル名も渡す
                 }, 1000);  
             };
             reader.readAsArrayBuffer(file);
@@ -408,8 +411,31 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType, fileExtension) {
+        function embedBinaryData(binaryData, dataType, fileExtension, fileName) { // ファイル名の引数を追加
             let pixelIndex = 0;
+
+            // ファイル名の長さを埋め込む
+            const fileNameLengthBinary = fileName.length.toString(2).padStart(16, '0'); // 16ビットでファイル名の長さを格納
+            for (let i = 0; i < fileNameLengthBinary.length; i++) {
+                const bit = parseInt(fileNameLengthBinary[i]);
+                imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1;  
+                }
+            }
+
+            // ファイル名自体を埋め込む
+            for (let i = 0; i < fileName.length; i++) {
+                const charBinary = fileName.charCodeAt(i).toString(2).padStart(8, '0');
+                for (let bit of charBinary) {
+                    imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
+                    pixelIndex += 1;
+                    if ((pixelIndex + 1) % 4 === 0) {
+                        pixelIndex += 1;  
+                    }
+                }
+            }
 
             const dataLengthBinary = binaryData.length.toString(2).padStart(32, '0');
             for (let i = 0; i < dataLengthBinary.length; i++) {
@@ -448,7 +474,7 @@
                     ctx.putImageData(imgData, 0, 0);
                     const dataUrl = canvas.toDataURL();
                     document.getElementById('outputPreviewImage').src = dataUrl;
-                    verifyEmbeddedData(binaryData, dataType, fileExtension);
+                    verifyEmbeddedData(binaryData, dataType, fileExtension, fileName);  // ファイル名もチェック
                     return;
                 }
 
@@ -474,11 +500,45 @@
             embedChunks(0); 
         }
 
-        function verifyEmbeddedData(originalBinaryData, dataType, fileExtension) {
+        function verifyEmbeddedData(originalBinaryData, dataType, fileExtension, originalFileName) {
             displayProgress('データ抽出中...', 90);
             updateProgressBar(90);
 
             let pixelIndex = 0;
+
+            // ファイル名の長さを抽出
+            let fileNameLengthBinary = '';
+            for (let i = 0; i < 16; i++) {
+                const bit = imgData.data[pixelIndex] & 1;
+                fileNameLengthBinary += bit;
+                pixelIndex += 1;
+                if ((pixelIndex + 1) % 4 === 0) {
+                    pixelIndex += 1; 
+                }
+            }
+            const fileNameLength = parseInt(fileNameLengthBinary, 2);
+
+            // ファイル名を抽出
+            let extractedFileName = '';
+            for (let i = 0; i < fileNameLength; i++) {
+                let charBinary = '';
+                for (let j = 0; j < 8; j++) {
+                    const bit = imgData.data[pixelIndex] & 1;
+                    charBinary += bit;
+                    pixelIndex += 1;
+                    if ((pixelIndex + 1) % 4 === 0) {
+                        pixelIndex += 1; 
+                    }
+                }
+                extractedFileName += String.fromCharCode(parseInt(charBinary, 2));
+            }
+
+            // ファイル名の一致チェック
+            if (extractedFileName !== originalFileName) {
+                alert("ファイル名が一致しません！");
+                displayError("ファイル名が一致しません！");
+                return;
+            }
 
             let binaryLength = '';
             for (let i = 0; i < 32; i++) {
