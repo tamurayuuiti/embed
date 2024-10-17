@@ -208,22 +208,23 @@
             displayProgress("Progress", percent);
 
             if (percent === 99) {
-                // 99%から100%へ1.5秒かけて進む
-                let currentPercent = 99;
-                const interval = setInterval(() => {
-                    currentPercent += 0.1;
-                    if (currentPercent >= 100) {
-                        currentPercent = 100;
-                        clearInterval(interval);
-                        displayImagePreviewAndDownload();  
-                        stopStopwatch();  
-                        document.getElementById('loadingIndicator').style.display = 'none';  
-                    }
-                    const formattedProgress = currentPercent.toFixed(1);
-                    progressBar.style.width = formattedProgress + '%';
-                    progressBarText.textContent = formattedProgress + '%';
-                }, 15); 
-            }
+    let currentPercent = 99;
+    const interval = setInterval(() => {
+        currentPercent += 0.1;
+        if (currentPercent >= 100) {
+            currentPercent = 100;
+            clearInterval(interval);
+            displayImagePreviewAndDownload();  
+            stopStopwatch();  
+            document.getElementById('loadingIndicator').style.display = 'none';  
+            displayProgress("データ埋め込み完了", currentPercent);  // 修正点
+        }
+        const formattedProgress = currentPercent.toFixed(1);
+        progressBar.style.width = formattedProgress + '%';
+        progressBarText.textContent = formattedProgress + '%';
+    }, 15);
+}
+
         }
 
         function displayImagePreviewAndDownload() {
