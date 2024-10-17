@@ -353,11 +353,24 @@
             return true;
         }
 
+        // UTF-8でエンコードされたファイル名をバイナリに変換
+        function utf8ToBinaryString(str) {
+            const encoder = new TextEncoder();
+            const bytes = encoder.encode(str);
+            return bytes;
+        }
+
+        // バイナリをUTF-8でデコードしてファイル名を復元
+        function binaryStringToUtf8(binaryArray) {
+            const decoder = new TextDecoder();
+            return decoder.decode(binaryArray);
+        }
+
         function embedData() {
             let binaryData;
             let dataType;
             let fileExtension = '';
-            let fileName = ''; // ファイル名の変数
+            let fileName = ''; 
 
             if (!isImageUploaded) {
                 alert("画像がアップロードされていません。");
@@ -382,7 +395,7 @@
             startStopwatch(); 
             updateProgressBar(0);
 
-            fileName = file.name;  // ファイル名を取得
+            fileName = file.name;  
 
             const reader = new FileReader();
             reader.onload = function(event) {
@@ -392,7 +405,7 @@
                 originalBinaryData = binaryData;
                 displayProgress('データ抽出中...', 90);  
                 setTimeout(() => {
-                    embedBinaryData(binaryData, dataType, fileExtension, fileName); // ファイル名も渡す
+                    embedBinaryData(binaryData, dataType, fileExtension, fileName); 
                 }, 1000);  
             };
             reader.readAsArrayBuffer(file);
@@ -411,11 +424,14 @@
             return 'unknown';
         }
 
-        function embedBinaryData(binaryData, dataType, fileExtension, fileName) { // ファイル名の引数を追加
+        function embedBinaryData(binaryData, dataType, fileExtension, fileName) {
             let pixelIndex = 0;
 
+            // ファイル名のバイナリデータをUTF-8に変換
+            const fileNameBinary = utf8ToBinaryString(fileName);
+            const fileNameLengthBinary = fileNameBinary.length.toString(2).padStart(16, '0');
+            
             // ファイル名の長さを埋め込む
-            const fileNameLengthBinary = fileName.length.toString(2).padStart(16, '0'); // 16ビットでファイル名の長さを格納
             for (let i = 0; i < fileNameLengthBinary.length; i++) {
                 const bit = parseInt(fileNameLengthBinary[i]);
                 imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | bit;
@@ -426,9 +442,9 @@
             }
 
             // ファイル名自体を埋め込む
-            for (let i = 0; i < fileName.length; i++) {
-                const charBinary = fileName.charCodeAt(i).toString(2).padStart(8, '0');
-                for (let bit of charBinary) {
+            for (let i = 0; i < fileNameBinary.length; i++) {
+                const byte = fileNameBinary[i].toString(2).padStart(8, '0');
+                for (let bit of byte) {
                     imgData.data[pixelIndex] = (imgData.data[pixelIndex] & 0xFE) | parseInt(bit);
                     pixelIndex += 1;
                     if ((pixelIndex + 1) % 4 === 0) {
@@ -474,7 +490,7 @@
                     ctx.putImageData(imgData, 0, 0);
                     const dataUrl = canvas.toDataURL();
                     document.getElementById('outputPreviewImage').src = dataUrl;
-                    verifyEmbeddedData(binaryData, dataType, fileExtension, fileName);  // ファイル名もチェック
+                    verifyEmbeddedData(binaryData, dataType, fileExtension, fileName);  
                     return;
                 }
 
@@ -519,19 +535,21 @@
             const fileNameLength = parseInt(fileNameLengthBinary, 2);
 
             // ファイル名を抽出
-            let extractedFileName = '';
+            const extractedFileNameBinary = [];
             for (let i = 0; i < fileNameLength; i++) {
-                let charBinary = '';
+                let byte = '';
                 for (let j = 0; j < 8; j++) {
                     const bit = imgData.data[pixelIndex] & 1;
-                    charBinary += bit;
+                    byte += bit;
                     pixelIndex += 1;
                     if ((pixelIndex + 1) % 4 === 0) {
                         pixelIndex += 1; 
                     }
                 }
-                extractedFileName += String.fromCharCode(parseInt(charBinary, 2));
+                extractedFileNameBinary.push(parseInt(byte, 2));
             }
+
+            const extractedFileName = binaryStringToUtf8(new Uint8Array(extractedFileNameBinary));
 
             // ファイル名の一致チェック
             if (extractedFileName !== originalFileName) {
